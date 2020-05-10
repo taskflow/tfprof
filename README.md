@@ -1,7 +1,7 @@
 # TFProf
 
 TFProf provides the visualization and tooling needed for profiling 
-[cpp-taskflow][cpp-taskflow] programs 
+cpp-taskflow programs 
 
 The page is under construction.
 
