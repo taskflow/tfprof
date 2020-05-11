@@ -151,25 +151,25 @@ function feed(rawData) {
       var total_time=0, stime=0, dtime=0, gtime=0, ctime=0, mtime=0;
       // iterate segment
       for (let k= 0, klen=rawData[i].data[j].data.length; k<klen; k++) {
-        const { timeRange, type, name } = rawData[i].data[j].data[k];
+        const { span, type, name } = rawData[i].data[j].data[k];
 
         state.completeFlatData.push({
           executor: executor,
           worker: rawData[i].data[j].worker,
-          timeRange: timeRange,
+          span: span,
           type: type,                             // legend value
           name: name
         });
 
-        if(state.minX == null || timeRange[0] < state.minX) {
-          state.minX = timeRange[0];
+        if(state.minX == null || span[0] < state.minX) {
+          state.minX = span[0];
         }
 
-        if(state.maxX == null || timeRange[1] > state.maxX) {
-          state.maxX = timeRange[1];
+        if(state.maxX == null || span[1] > state.maxX) {
+          state.maxX = span[1];
         }
         
-        const elapsed = timeRange[1] - timeRange[0];
+        const elapsed = span[1] - span[0];
         total_time += elapsed;
 
         switch(type) {
@@ -722,8 +722,8 @@ function _make_tfp_tooltips() {
        .direction('w')
        .offset([0, 0])
        .html(d => {
-         const leftPush = (d.hasOwnProperty('timeRange') ?
-                          state.xScale(d.timeRange[0]) : 0);
+         const leftPush = (d.hasOwnProperty('span') ?
+                          state.xScale(d.span[0]) : 0);
          const topPush = (d.hasOwnProperty('worker') ?
                           state.grpScale(d.executor) - state.yScale(`${d.executor}+&+${d.worker}`) : 0 );
          state.executorTooltip.offset([topPush, -leftPush]);
@@ -738,8 +738,8 @@ function _make_tfp_tooltips() {
        .direction('e')
        .offset([0, 0])
        .html(d => {
-         const rightPush = (d.hasOwnProperty('timeRange') ? 
-                            state.xScale.range()[1]-state.xScale(d.timeRange[1]) : 0);
+         const rightPush = (d.hasOwnProperty('span') ? 
+                            state.xScale.range()[1]-state.xScale(d.span[1]) : 0);
          state.lineTooltip.offset([0, rightPush]);
          return d.worker;
        });
@@ -754,8 +754,8 @@ function _make_tfp_tooltips() {
     .html(d => {
       return `Type: ${d.type}<br>
               Name: ${d.name}<br>
-              Span: [${d.timeRange}]<br>
-              Time: ${d.timeRange[1]-d.timeRange[0]}`;
+              Span: [${d.span}]<br>
+              Time: ${d.span[1]-d.span[0]}`;
     });
 
   state.svg.call(state.segmentTooltip);
@@ -811,7 +811,7 @@ function _apply_filters() {
 
   // Flat data based on segment length
   //state.flatData = (state.minSegmentDuration>0
-  //  ? state.completeFlatData.filter(d => (d.timeRange[1]-d.timeRange[0]) >= state.minSegmentDuration)
+  //  ? state.completeFlatData.filter(d => (d.span[1]-d.span[0]) >= state.minSegmentDuration)
   //  : state.completeFlatData
   //);
   //state.flatData = state.completeFlatData;
@@ -1091,8 +1091,8 @@ function _render_timelines(maxElems) {
   const dataFilter = (d, i) =>
     (maxElems == null || i<maxElems) &&
     (state.grpScale.domain().indexOf(d.executor)+1 &&
-     d.timeRange[1]>=state.xScale.domain()[0] &&
-     d.timeRange[0]<=state.xScale.domain()[1] &&
+     d.span[1]>=state.xScale.domain()[0] &&
+     d.span[0]<=state.xScale.domain()[1] &&
      state.yScale.domain().indexOf(`${d.executor}+&+${d.worker}`)+1);
 
   state.lineHeight = state.graphH/state.nLines*0.8;
@@ -1100,7 +1100,7 @@ function _render_timelines(maxElems) {
   let timelines = state.graph.selectAll('rect.series-segment').data(
     //state.flatData.filter(dataFilter),
     state.completeFlatData.filter(dataFilter),
-    d => d.executor + d.worker + d.type + d.timeRange[0]
+    d => d.executor + d.worker + d.type + d.span[0]
   );
 
   timelines.exit().remove();
@@ -1137,10 +1137,10 @@ function _render_timelines(maxElems) {
       d3.select(this)
         .transition().duration(250)
         .attr('x', function (d) {
-          return state.xScale(d.timeRange[0])-hoverEnlarge/2;
+          return state.xScale(d.span[0])-hoverEnlarge/2;
         })
         .attr('width', function (d) {
-          return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])])+hoverEnlarge;
+          return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])])+hoverEnlarge;
         })
         .attr('y', function (d) {
           return state.yScale(`${d.executor}+&+${d.worker}`)-(state.lineHeight+hoverEnlarge)/2;
@@ -1152,10 +1152,10 @@ function _render_timelines(maxElems) {
       d3.select(this)
         .transition().duration(250)
         .attr('x', function (d) {
-          return state.xScale(d.timeRange[0]);
+          return state.xScale(d.span[0]);
         })
         .attr('width', function (d) {
-          return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])]);
+          return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])]);
         })
         .attr('y', function (d) {
           return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
@@ -1172,10 +1172,10 @@ function _render_timelines(maxElems) {
 
   timelines.transition().duration(state.transDuration)
     .attr('x', function (d) {
-      return state.xScale(d.timeRange[0]);
+      return state.xScale(d.span[0]);
     })
     .attr('width', function (d) {
-      return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])]);
+      return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])]);
     })
     .attr('y', function (d) {
       return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
