@@ -9,9 +9,11 @@ Generate tfprof data (.tfp) from your cpp-taskflow program through the python sc
 
 ```bash
 ~$ python3 tfprof.py -o output.tfp /path/to/my/cpp-taskflow/program arg1 arg2
+~$ cat output.tfp
+[ ... JSON data ]
 ```
 
-Paste the content of `output.tfp` to the JSON text area at the following page:
+Paste the content of `output.tfp` to the bottom JSON text area at the following page:
 
 <p align="center">
    <a href="https://cpp-taskflow.github.io/tfprof/">

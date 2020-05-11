@@ -75,7 +75,7 @@ def main():
             #ofs.write(ifs.read());
             json.dump(data, ofs)
   
-    ofs.write(']');
+    ofs.write("]\n");
   
   logger.info(f"saved result to {args.output:s}");
   
