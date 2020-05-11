@@ -5,7 +5,7 @@ cpp-taskflow programs
 
 # Profile Your Cpp-Taskflow Program
 
-Generate tfprof data (.tfp) from your cpp-taskflow program through the python script:
+Generate tfprof data (.tfp) from your [cpp-taskflow][cpp-taskflow] program through the python script:
 
 ```bash
 ~$ python3 tfprof.py -o output.tfp /path/to/my/cpp-taskflow/program arg1 arg2
