@@ -53,26 +53,26 @@
       <textarea class="form-control" id="tfp_textarea" placeholder="Paste Profiled Data" rows="8"></textarea>
       <div class="invalid-feedback"><p>Wrong format! Correct your data with the following syntax: <pre class="text-danger">[
   {
-    "group": "executor1-name",
+    "executor": "executor1-name",
     "data": [
       {
-        "label": "worker1-name",
+        "worker": "worker1-name",
         "data": [
           {
             "timeRange": [from1, to1],
             "name": "task1-name",
-            "val": "task1-type"
+            "type": "task1-type"
           },
           {
             "timeRange": [from2, to2],
             "name": "task2-name",
-            "val": "task2-type"
+            "type": "task2-type"
           }, 
           (... more timeRange segments)
         ]
       },
       {
-        "label": "worker2-name",
+        "worker": "worker2-name",
         "data": [ ... ]
       },
       (... more workers)

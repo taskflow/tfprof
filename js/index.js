@@ -64,11 +64,11 @@ var state = {
 
   // legend
   zColorMap: new Map([
-    ['static task', '#4682b4'],
-    ['dynamic task', '#ff7f0e'],
+    ['static', '#4682b4'],
+    ['dynamic', '#ff7f0e'],
     ['cudaflow', '#6A0DAD'],
-    ['condition task', '#41A317'],
-    ['module task', '#0000FF']
+    ['condition', '#41A317'],
+    ['module', '#0000FF']
   ]),
   zScale: null,
   zGroup: null,
@@ -89,7 +89,7 @@ var state = {
   transDuration: 700,
 
   // data field
-  completeStructData: [],       // groups and lines
+  completeStructData: [],       // executors and lines
   completeFlatData: [],         // flat segments with gropu and line
   completeBarData: [],        // bar char data
   structData: null,
@@ -139,11 +139,11 @@ function feed(rawData) {
 
   // iterate executor
   for (let i=0, ilen=rawData.length; i<ilen; i++) {
-    const group = rawData[i].group;
+    const executor = rawData[i].executor;
 
     state.completeStructData.push({
-      group: group,
-      lines: rawData[i].data.map(d => d.label)
+      executor: executor,
+      lines: rawData[i].data.map(d => d.worker)
     });
     
     // iterate worker
@@ -151,13 +151,13 @@ function feed(rawData) {
       var total_time=0, stime=0, dtime=0, gtime=0, ctime=0, mtime=0;
       // iterate segment
       for (let k= 0, klen=rawData[i].data[j].data.length; k<klen; k++) {
-        const { timeRange, val, name } = rawData[i].data[j].data[k];
+        const { timeRange, type, name } = rawData[i].data[j].data[k];
 
         state.completeFlatData.push({
-          group: group,
-          label: rawData[i].data[j].label,
+          executor: executor,
+          worker: rawData[i].data[j].worker,
           timeRange: timeRange,
-          val: val,                             // legend value
+          type: type,                             // legend value
           name: name
         });
 
@@ -172,12 +172,12 @@ function feed(rawData) {
         const elapsed = timeRange[1] - timeRange[0];
         total_time += elapsed;
 
-        switch(val) {
-          case "static task":
+        switch(type) {
+          case "static":
             stime += elapsed;
           break;
 
-          case "dynamic task":
+          case "dynamic":
             dtime += elapsed;
           break;
 
@@ -185,11 +185,11 @@ function feed(rawData) {
             gtime += elapsed;
           break;
 
-          case "condition task":
+          case "condition":
             ctime += elapsed;
           break;
 
-          case "module task":
+          case "module":
             mtime += elapsed;
           break;
 
@@ -200,14 +200,14 @@ function feed(rawData) {
       }
 
       state.completeBarData.push({
-        "group": group,
-        "label": rawData[i].data[j].label,
+        "executor": executor,
+        "worker": rawData[i].data[j].worker,
         "tasks": rawData[i].data[j].data.length,
-        "static task": stime,
-        "dynamic task": dtime,
+        "static": stime,
+        "dynamic": dtime,
         "cudaflow": gtime,
-        "condition task": ctime,
-        "module task": mtime,
+        "condition": ctime,
+        "module": mtime,
         "busy": total_time
       });
 
@@ -259,7 +259,7 @@ function update(zoomX, zoomY) {
   _adjust_legend();
     
   _render_axes()
-  _render_groups();
+  _render_executors();
   _render_timelines();
   _render_overview_area();
 }
@@ -267,7 +267,7 @@ function update(zoomX, zoomY) {
 function update_bar(selexe, seltask) {
 
   var exeopt = d3.select("#tfp-bar-sel-executor").selectAll("option")
-		.data(['executor (all)', ...state.completeStructData.map(d=>d.group)])
+		.data(['executor (all)', ...state.completeStructData.map(d=>d.executor)])
 
   exeopt.exit().remove();
   exeopt = exeopt.merge(exeopt.enter().append('option')).text(d=>d);
@@ -285,7 +285,7 @@ function update_bar(selexe, seltask) {
 
   // filter executor
   data = state.completeBarData.filter( d => {
-    return (selexe == null  || d.group == selexe);
+    return (selexe == null  || d.executor == selexe);
   });
   
   // filter task type
@@ -302,7 +302,7 @@ function update_bar(selexe, seltask) {
   //console.log("filtered data", data);
 
   state.barXScale.padding(0.5)
-    .domain(data.map(d=>`${d.group}+&+${d.label}`))
+    .domain(data.map(d=>`${d.executor}+&+${d.worker}`))
     .range([state.barLeftMargin, state.barWidth-state.barRightMargin]);
   
   state.barYScale
@@ -363,14 +363,14 @@ function update_bar(selexe, seltask) {
 
       const hoverEnlarge = state.barXScale.bandwidth()*0.02;
 
-      //  const x = state.barXScale(d.data.label);
+      //  const x = state.barXScale(d.data.worker);
       //  const y = state.barYScale(d[1]);
       //  const w = state.barXScale.bandwidth();
       //  const h = state.barYScale(d[0]) - state.barYScale(d[1]);
       d3.select(this)
         .transition().duration(250)
         .attr('x', function(d) {
-          return state.barXScale(`${d.data.group}+&+${d.data.label}`)-hoverEnlarge/2; 
+          return state.barXScale(`${d.data.executor}+&+${d.data.worker}`)-hoverEnlarge/2; 
         })
         .attr('width', state.barXScale.bandwidth() + hoverEnlarge)
         .attr('y', function(d) {
@@ -386,7 +386,7 @@ function update_bar(selexe, seltask) {
         .transition().duration(250)
         .attr('width', d => state.barXScale.bandwidth())
         .attr('height', d => state.barYScale(d[0]) - state.barYScale(d[1]))
-        .attr('x', d => state.barXScale(`${d.data.group}+&+${d.data.label}`))
+        .attr('x', d => state.barXScale(`${d.data.executor}+&+${d.data.worker}`))
         .attr('y', d => state.barYScale(d[1]))
         .style('fill-opacity', 0.8);
     })
@@ -396,7 +396,7 @@ function update_bar(selexe, seltask) {
     .transition().duration(state.transDuration)
     .attr('rx', 1)
     .attr('ry', 1)
-    .attr('x', d => state.barXScale(`${d.data.group}+&+${d.data.label}`))
+    .attr('x', d => state.barXScale(`${d.data.executor}+&+${d.data.worker}`))
     .attr('y', d => state.barYScale(d[1]))
     .attr('height', d => state.barYScale(d[0]) - state.barYScale(d[1]))
     .attr('width', state.barXScale.bandwidth());
@@ -408,7 +408,7 @@ function update_bar(selexe, seltask) {
 
 // Procedure: _invertOrdinal 
 // perform interpolation
-function _invertOrdinal(val, cmpFunc) {
+function _invertOrdinal(type, cmpFunc) {
 
   cmpFunc = cmpFunc || function (a, b) {
       return (a >= b);
@@ -418,13 +418,13 @@ function _invertOrdinal(val, cmpFunc) {
   let scRange = this.range();
 
   if (scRange.length === 2 && scDomain.length !== 2) {
-    // Special case, interpolate range vals
+    // Special case, interpolate range types
     scRange = d3.range(scRange[0], scRange[1], (scRange[1] - scRange[0]) / scDomain.length);
   }
 
   const bias = scRange[0];
   for (let i = 0, len = scRange.length; i < len; i++) {
-    if (cmpFunc(scRange[i] + bias, val)) {
+    if (cmpFunc(scRange[i] + bias, type)) {
       return scDomain[Math.round(i * scDomain.length / scRange.length)];
     }
   }
@@ -435,14 +435,14 @@ function _invertOrdinal(val, cmpFunc) {
 function _make_tfp_gradient_field() {  
 
   //console.log("making gradient ...");
-  state.groupGradId = `areaGradient${Math.round(Math.random()*10000)}`;
+  state.executorGradId = `areaGradient${Math.round(Math.random()*10000)}`;
   const gradient = state.svg.append('linearGradient');
 
   gradient.attr('y1', '0%')
           .attr('y2', '100%')
           .attr('x1', '0%')
           .attr('x2', '0%')
-          .attr('id', state.groupGradId);
+          .attr('id', state.executorGradId);
   
   const color_scale = d3.scaleLinear().domain([0, 1]).range(['#FAFAFA', '#E0E0E0']);
   const stop_scale = d3.scaleLinear().domain([0, 100]).range(color_scale.domain());
@@ -569,10 +569,10 @@ function _make_tfp_legend() {
       state.svg.dispatch('resetZoom');
     });
   
-  // add a legend group
+  // add a legend 
   state.zScale = d3.scaleOrdinal()
-    .domain(['static', 'dynamic', 'cudaflow', 'condition', 'module'])
-    .range(['#4682b4', '#FF7F0E', '#6A0DAD', '#41A317', '#0000FF']);
+    .domain(Array.from(state.zColorMap.keys()))
+    .range(Array.from(state.zColorMap.values()));
 
   state.zGroup = state.svg.append('g')
                    .attr('class', 'legend');
@@ -716,23 +716,23 @@ function _make_tfp_tooltips() {
 
   //console.log("making the tooltips ...");
   
-  // group tooltips 
-  state.groupTooltip = d3.tip()
+  // executor tooltips 
+  state.executorTooltip = d3.tip()
        .attr('class', 'tfp-tooltip')
        .direction('w')
        .offset([0, 0])
        .html(d => {
          const leftPush = (d.hasOwnProperty('timeRange') ?
                           state.xScale(d.timeRange[0]) : 0);
-         const topPush = (d.hasOwnProperty('label') ?
-                          state.grpScale(d.group) - state.yScale(d.group+'+&+'+d.label) : 0 );
-         state.groupTooltip.offset([topPush, -leftPush]);
-         return d.group;
+         const topPush = (d.hasOwnProperty('worker') ?
+                          state.grpScale(d.executor) - state.yScale(`${d.executor}+&+${d.worker}`) : 0 );
+         state.executorTooltip.offset([topPush, -leftPush]);
+         return d.executor;
        });
 
-  state.svg.call(state.groupTooltip);
+  state.svg.call(state.executorTooltip);
 
-  // label tooltips
+  // worker tooltips
   state.lineTooltip = d3.tip()
        .attr('class', 'tfp-tooltip')
        .direction('e')
@@ -741,7 +741,7 @@ function _make_tfp_tooltips() {
          const rightPush = (d.hasOwnProperty('timeRange') ? 
                             state.xScale.range()[1]-state.xScale(d.timeRange[1]) : 0);
          state.lineTooltip.offset([0, rightPush]);
-         return d.label;
+         return d.worker;
        });
 
   state.svg.call(state.lineTooltip);
@@ -752,7 +752,7 @@ function _make_tfp_tooltips() {
     .direction('s')
     .offset([5, 0])
     .html(d => {
-      return `Type: ${d.val}<br>
+      return `Type: ${d.type}<br>
               Name: ${d.name}<br>
               Span: [${d.timeRange}]<br>
               Time: ${d.timeRange[1]-d.timeRange[0]}`;
@@ -767,8 +767,8 @@ function _make_tfp_tooltips() {
     .offset([0, -5])
     .html(d => {
       //const p = ((d[1]-d[0]) * 100 / (state.maxX - state.minX)).toFixed(2);
-      return `${d.data.group}<br>
-        ${d.data.label}<br>
+      return `${d.data.executor}<br>
+        ${d.data.worker}<br>
         Span: [${d[0]}, ${d[1]}]<br>
         Time: ${d[1]-d[0]}`;
     });
@@ -844,40 +844,29 @@ function _apply_filters() {
 
     let validLines = state.completeStructData[i].lines;
 
-    //if(state.minSegmentDuration>0) {  // Use only non-filtered (due to segment length) groups/labels
-    //  if (!state.flatData.some(d => d.group == state.completeStructData[i].group)) {
-    //    continue; // No data for this group
-    //  }
-
-    //  validLines = state.completeStructData[i].lines
-    //    .filter(d => state.flatData.some(dd =>
-    //      dd.group == state.completeStructData[i].group && dd.label == d
-    //    )
-    //  );
-    //}
-    if (cntDwn[0]>=validLines.length) { // Ignore whole group (before start)
+    if (cntDwn[0]>=validLines.length) { // Ignore whole executor (before start)
       cntDwn[0]-=validLines.length;
       continue;
     }
-    const groupData = {
-      group: state.completeStructData[i].group,
+    const executorData = {
+      executor: state.completeStructData[i].executor,
       lines: null
     };
-    if (validLines.length-cntDwn[0]>=cntDwn[1]) {  // Last (or first && last) group (partial)
-      groupData.lines = validLines.slice(cntDwn[0],cntDwn[1]+cntDwn[0]);
-      state.structData.push(groupData);
+    if (validLines.length-cntDwn[0]>=cntDwn[1]) {  // Last (or first && last) executor (partial)
+      executorData.lines = validLines.slice(cntDwn[0],cntDwn[1]+cntDwn[0]);
+      state.structData.push(executorData);
       cntDwn[1]=0;
       break;
     }
-    if (cntDwn[0]>0) {  // First group (partial)
-      groupData.lines = validLines.slice(cntDwn[0]);
+    if (cntDwn[0]>0) {  // First executor (partial)
+      executorData.lines = validLines.slice(cntDwn[0]);
       cntDwn[0]=0;
-    } else {  // Middle group (full fit)
-      groupData.lines = validLines;
+    } else {  // Middle executor (full fit)
+      executorData.lines = validLines;
     }
 
-    state.structData.push(groupData);
-    cntDwn[1]-=groupData.lines.length;
+    state.structData.push(executorData);
+    cntDwn[1]-=executorData.lines.length;
   }
 
   state.nLines-=cntDwn[1];
@@ -909,23 +898,23 @@ function _adjust_xscale() {
 // Procedure: _adjust_yscale
 function _adjust_yscale() {
 
-  let labels = [];
+  let workers = [];
   for (let i= 0, len=state.structData.length; i<len; i++) {
-    labels = labels.concat(state.structData[i].lines.map(function (d) {
-      return `${state.structData[i].group}+&+${d}`
+    workers = workers.concat(state.structData[i].lines.map(function (d) {
+      return `${state.structData[i].executor}+&+${d}`
     }));
   }
 
-  //console.log("adjusting yscale to", labels);
-  state.yScale.domain(labels);
-  //console.log(state.graphH/labels.length*0.5, state.graphH*(1-0.5/labels.length));
-  state.yScale.range([state.graphH/labels.length*0.5, state.graphH*(1-0.5/labels.length)]);
+  //console.log("adjusting yscale to", workers);
+  state.yScale.domain(workers);
+  //console.log(state.graphH/workers.length*0.5, state.graphH*(1-0.5/workers.length));
+  state.yScale.range([state.graphH/workers.length*0.5, state.graphH*(1-0.5/workers.length)]);
 }
     
 // Procedure: _adjust_grpscale
 function _adjust_grpscale() {
-  //console.log("adjusting group domain", state.structData.map(d => d.group));
-  state.grpScale.domain(state.structData.map(d => d.group));
+  //console.log("adjusting executor domain", state.structData.map(d => d.executor));
+  state.grpScale.domain(state.structData.map(d => d.executor));
 
   let cntLines = 0;
 
@@ -976,7 +965,7 @@ function _render_axes() {
       .style('stroke-opacity', 1)
       .style('fill-opacity', 1);
 
-  /* Angled x axis labels
+  /* Angled x axis workers
    state.svg.select('g.x-axis').selectAll('text')
    .style('text-anchor', 'end')
    .attr('transform', 'translate(-10, 3) rotate(-60)');
@@ -1006,10 +995,10 @@ function _render_axes() {
 
   // Y
   const fontVerticalMargin = 0.6;
-  const labelDisplayRatio = Math.ceil(
+  const workerDisplayRatio = Math.ceil(
     state.nLines*state.minLabelFont/Math.SQRT2/state.graphH/fontVerticalMargin
   );
-  const tickVals = state.yScale.domain().filter((d, i) => !(i % labelDisplayRatio));
+  const tickVals = state.yScale.domain().filter((d, i) => !(i % workerDisplayRatio));
   let fontSize = Math.min(14, state.graphH/tickVals.length*fontVerticalMargin*Math.SQRT2);
   let maxChars = Math.ceil(state.rightMargin/(fontSize/Math.SQRT2));
 
@@ -1052,39 +1041,39 @@ function _render_axes() {
 
 }
 
-// Procedure: _render_groups
-function _render_groups() {
+// Procedure: _render_executors
+function _render_executors() {
 
-  let groups = state.graph.selectAll('rect.series-group').data(state.structData, d => d.group);
-  //console.log("rendering groups", groups);
+  let executors = state.graph.selectAll('rect.series-executor').data(state.structData, d => d.executor);
+  //console.log("rendering executors", executors);
       
-  groups.exit()
+  executors.exit()
     .transition().duration(state.transDuration)
     .style('stroke-opacity', 0)
     .style('fill-opacity', 0)
     .remove();
 
-  const newGroups = groups.enter().append('rect')
-    .attr('class', 'series-group')
+  const newGroups = executors.enter().append('rect')
+    .attr('class', 'series-executor')
     .attr('x', 0)
     .attr('y', 0)
     .attr('height', 0)
-    .style('fill', `url(#${state.groupGradId})`)
-    .on('mouseover', state.groupTooltip.show)
-    .on('mouseout', state.groupTooltip.hide);
+    .style('fill', `url(#${state.executorGradId})`)
+    .on('mouseover', state.executorTooltip.show)
+    .on('mouseout', state.executorTooltip.hide);
 
   newGroups.append('title')
     .text('click-drag to zoom in');
 
-  groups = groups.merge(newGroups);
+  executors = executors.merge(newGroups);
 
-  groups.transition().duration(state.transDuration)
+  executors.transition().duration(state.transDuration)
     .attr('width', state.graphW)
     .attr('height', function (d) {
       return state.graphH*d.lines.length/state.nLines;
     })
     .attr('y', function (d) {
-      return state.grpScale(d.group)-state.graphH*d.lines.length/state.nLines/2;
+      return state.grpScale(d.executor)-state.graphH*d.lines.length/state.nLines/2;
     });
 }
 
@@ -1101,17 +1090,17 @@ function _render_timelines(maxElems) {
 
   const dataFilter = (d, i) =>
     (maxElems == null || i<maxElems) &&
-    (state.grpScale.domain().indexOf(d.group)+1 &&
+    (state.grpScale.domain().indexOf(d.executor)+1 &&
      d.timeRange[1]>=state.xScale.domain()[0] &&
      d.timeRange[0]<=state.xScale.domain()[1] &&
-     state.yScale.domain().indexOf(d.group+'+&+'+d.label)+1);
+     state.yScale.domain().indexOf(`${d.executor}+&+${d.worker}`)+1);
 
   state.lineHeight = state.graphH/state.nLines*0.8;
 
   let timelines = state.graph.selectAll('rect.series-segment').data(
     //state.flatData.filter(dataFilter),
     state.completeFlatData.filter(dataFilter),
-    d => d.group + d.label + d.val + d.timeRange[0]
+    d => d.executor + d.worker + d.type + d.timeRange[0]
   );
 
   timelines.exit().remove();
@@ -1128,9 +1117,9 @@ function _render_timelines(maxElems) {
     .attr('width', 0)
     .attr('height', 0)
     .style('fill-opacity', 0)
-    .style('fill', d => state.zColorMap.get(d.val))
-    .on('mouseover.groupTooltip', state.groupTooltip.show)
-    .on('mouseout.groupTooltip', state.groupTooltip.hide)
+    .style('fill', d => state.zColorMap.get(d.type))
+    .on('mouseover.executorTooltip', state.executorTooltip.show)
+    .on('mouseout.executorTooltip', state.executorTooltip.hide)
     .on('mouseover.lineTooltip', state.lineTooltip.show)
     .on('mouseout.lineTooltip', state.lineTooltip.hide)
     .on('mouseover.segmentTooltip', state.segmentTooltip.show)
@@ -1154,7 +1143,7 @@ function _render_timelines(maxElems) {
           return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])])+hoverEnlarge;
         })
         .attr('y', function (d) {
-          return state.yScale(`${d.group}+&+${d.label}`)-(state.lineHeight+hoverEnlarge)/2;
+          return state.yScale(`${d.executor}+&+${d.worker}`)-(state.lineHeight+hoverEnlarge)/2;
         })
         .attr('height', state.lineHeight+hoverEnlarge)
         .style('fill-opacity', 1);
@@ -1169,7 +1158,7 @@ function _render_timelines(maxElems) {
           return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])]);
         })
         .attr('y', function (d) {
-          return state.yScale(`${d.group}+&+${d.label}`)-state.lineHeight/2;
+          return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
         })
         .attr('height', state.lineHeight)
         .style('fill-opacity', .8);
@@ -1189,7 +1178,7 @@ function _render_timelines(maxElems) {
       return d3.max([1, state.xScale(d.timeRange[1])-state.xScale(d.timeRange[0])]);
     })
     .attr('y', function (d) {
-      return state.yScale(`${d.group}+&+${d.label}`)-state.lineHeight/2;
+      return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
     })
     .attr('height', state.lineHeight)
     .style('fill-opacity', .8);
@@ -1257,11 +1246,11 @@ function num_xticks(W) {
   return Math.max(2, Math.min(12, Math.round(W * 0.012)));
 }
   
-function reduceLabel(label, maxChars) {
-  return label.length <= maxChars ? label : (
-    label.substring(0, maxChars*2/3)
+function reduceLabel(worker, maxChars) {
+  return worker.length <= maxChars ? worker : (
+    worker.substring(0, maxChars*2/3)
     + '...'
-    + label.substring(label.length - maxChars/3, label.length
+    + worker.substring(worker.length - maxChars/3, worker.length
   ));
 }
 
