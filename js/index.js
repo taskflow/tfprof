@@ -65,7 +65,7 @@ var state = {
   // legend
   zColorMap: new Map([
     ['static', '#4682b4'],
-    ['dynamic', '#ff7f0e'],
+    ['subflow', '#ff7f0e'],
     ['cudaflow', '#6A0DAD'],
     ['condition', '#41A317'],
     ['module', '#0000FF']
@@ -177,7 +177,7 @@ function feed(rawData) {
             stime += elapsed;
           break;
 
-          case "dynamic":
+          case "subflow":
             dtime += elapsed;
           break;
 
@@ -204,7 +204,7 @@ function feed(rawData) {
         "worker": rawData[i].data[j].worker,
         "tasks": rawData[i].data[j].data.length,
         "static": stime,
-        "dynamic": dtime,
+        "subflow": dtime,
         "cudaflow": gtime,
         "condition": ctime,
         "module": mtime,

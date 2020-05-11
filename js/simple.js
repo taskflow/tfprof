@@ -43,47 +43,47 @@ const simple = [
         {
           "timeRange": [4,5],
           "name": "t7",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [9,10],
           "name": "t8",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [15,16],
           "name": "t9",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [19,20],
           "name": "t10",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [22,23],
           "name": "t11",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [26,27],
           "name": "t12",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [29,30],
           "name": "t13",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [33,34],
           "name": "t14",
-          "type": "dynamic"
+          "type": "subflow"
         },
         {
           "timeRange": [36,37],
           "name": "t15",
-          "type": "dynamic"
+          "type": "subflow"
         }
       ]
     },
