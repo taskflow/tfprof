@@ -113,7 +113,7 @@ function make_tfp_structure(dom_element) {
   state.yScale.invert = _invertOrdinal;
   state.grpScale.invert = _invertOrdinal;
   
-  _make_tfp_gradient_field();
+  //_make_tfp_gradient_field();
   _make_tfp_axes();
   _make_tfp_legend();
   _make_tfp_graph();
@@ -432,30 +432,6 @@ function _invertOrdinal(type, cmpFunc) {
   return this.domain()[this.domain().length-1];
 }
   
-function _make_tfp_gradient_field() {  
-
-  //console.log("making gradient ...");
-  state.executorGradId = `areaGradient${Math.round(Math.random()*10000)}`;
-  const gradient = state.svg.append('linearGradient');
-
-  gradient.attr('y1', '0%')
-          .attr('y2', '100%')
-          .attr('x1', '0%')
-          .attr('x2', '0%')
-          .attr('id', state.executorGradId);
-  
-  const color_scale = d3.scaleLinear().domain([0, 1]).range(['#FAFAFA', '#E0E0E0']);
-  const stop_scale = d3.scaleLinear().domain([0, 100]).range(color_scale.domain());
-  
-  let color_stops = gradient.selectAll('stop')
-                      .data(d3.range(0, 100.01, 20)); 
-
-  color_stops.exit().remove();
-  color_stops.merge(color_stops.enter().append('stop'))
-    .attr('offset', d => `${d}%`)
-    .attr('stop-color', d => color_scale(stop_scale(d)));
-}
-
 // Procedure: _make_tfp_date_marker_line
 function _make_tfp_date_marker_line() {
   //console.log("making date marker ...");
@@ -767,9 +743,9 @@ function _make_tfp_tooltips() {
     .offset([0, -5])
     .html(d => {
       //const p = ((d[1]-d[0]) * 100 / (state.maxX - state.minX)).toFixed(2);
+      const p = ((d[1]-d[0]) * 100 / (d.data.busy)).toFixed(2);
       return `${d.data.executor}<br>
         ${d.data.worker}<br>
-        Span: [${d[0]}, ${d[1]}]<br>
         Time: ${d[1]-d[0]}`;
     });
 
@@ -1058,7 +1034,6 @@ function _render_executors() {
     .attr('x', 0)
     .attr('y', 0)
     .attr('height', 0)
-    .style('fill', `url(#${state.executorGradId})`)
     .on('mouseover', state.executorTooltip.show)
     .on('mouseout', state.executorTooltip.hide);
 
@@ -1335,6 +1310,7 @@ function tfp_render_dreamplace() {
 make_tfp_structure();
 
 tfp_render_simple();
+//tfp_render_dreamplace();
 
 
 
