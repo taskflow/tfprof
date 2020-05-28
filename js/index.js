@@ -1,66 +1,124 @@
 // Program: tfprof
 // Author: twhuang
-//
-
 'use strict';
+// ----------------------------------------------------------------------------
 
-var state = {
+//// Example: Matrix multiplication
+//$('#tfp_matmul').on('click', function() {
+//  tfp_render_matmul();
+//})
+//
+//$('#tfp_kmeans').on('click', function() {
+//  tfp_render_kmeans();
+//})
+//
+//$('#tfp_inference').on('click', function() {
+//  tfp_render_inference();
+//})
+//
+//$('#tfp_dreamplace').on('click', function() {
+//  tfp_render_dreamplace();
+//})
+//
+//// textarea changer event
+//$('#tfp_textarea').on('input propertychange paste', function() {
+//
+//  if($(this).data('timeout')) {
+//    clearTimeout($(this).data('timeout'));
+//  }
+//
+//  $(this).data('timeout', setTimeout(()=>{
+//    
+//    var text = $('#tfp_textarea').val().trim();
+//    
+//    $('#tfp_textarea').removeClass('is-invalid');
+//
+//    if(!text) {
+//      return;
+//    }
+//    
+//    try {
+//      var json = JSON.parse(text);
+//      //console.log(json);
+//      feed(json);
+//    }
+//    catch(e) {
+//      $('#tfp_textarea').addClass('is-invalid');
+//      console.error(e);
+//    }
+//
+//  }, 2000));
+//});
+//
+//function tfp_render_simple() {
+//  feed(simple);
+//  $('#tfp_textarea').text(JSON.stringify(simple, null, 2));
+//}
+//
+//function tfp_render_matmul() {
+//  feed(matmul);
+//  $('#tfp_textarea').text(JSON.stringify(matmul));
+//}
+//
+//function tfp_render_kmeans() {
+//  feed(kmeans);
+//  $('#tfp_textarea').text(JSON.stringify(kmeans));
+//}
+//
+//function tfp_render_inference() {
+//  feed(inference);
+//  $('#tfp_textarea').text(JSON.stringify(inference))
+//}
+//
+//function tfp_render_dreamplace() {
+//  //feed(dreamplace);
+//  feed(opentimer);
+//  $('#tfp_textarea').text(JSON.stringify(dreamplace))
+//}
+
+// ----------------------------------------------------------------------------
+
+// DOM objects
+//make_tfp_structure();
+
+const tfp = {
   
   // DOMAIN (data) -> RANGE (graph)
 
   // main timeline svg
   dom : null,
-  svg : null,                     // svg block
-  graph: null,                    // graph block
-  graphW: 0,
-  graphH: 0,
-  zoomX: [null, null],            // scoped time data
-  zoomY: [null, null],            // scoped line data
- 
-  // main graph
-  width: window.innerWidth,
-  height: 650,
-  maxHeight: Infinity,
-  maxLineHeight: 20,
+  svg : null,
+  width: null,
+  height: null,
+  topMargin: 30,
+  bottomMargin: 30,
   leftMargin: 100,
   rightMargin: 100,
-  topMargin: 26,
-  bottomMargin: 30,
+  innerMargin: 30,
+ 
+  // timeline chart
+  tlGroup: null,
+  tlW: null,
+  maxLineHeight: 20,
+  tlXScale: d3.scaleLinear(),
+  tlWScale: d3.scaleBand(),  
+  tlEScale: d3.scaleOrdinal(),
+  tlZScale: d3.scaleOrdinal(),
+  tlXAxis: d3.axisBottom(),
+  tlXGrid: d3.axisTop(),
+  tlWAxis: d3.axisRight(),
+  tlEAxis: d3.axisLeft(),
+  tlBrush: d3.brushX(),
+  tlBrushTimeout: null,
+  tlLineH: null,
   
-  // overview element
-  overviewAreaSvg: null,
-  overviewAreaScale: d3.scaleLinear(),
-  overviewAreaSelection: [null, null],
-  overviewAreaDomain: [null, null],
-  overviewAreaBrush: null,
-  overviewAreaTopMargin: 1,
-  overviewAreaBottomMargin: 30,
-  overviewAreaXGrid: d3.axisBottom().tickFormat(''),
-  overviewAreaXAxis: d3.axisBottom().tickPadding(0),
-  overviewAreaBrush: d3.brushX(),
-
   // bar chart
-  barSvg : null,
-  barXScale: d3.scaleBand(),
-  barYScale: d3.scaleLinear(),
+  barGroup: null,
+  barW: null,
+  barXScale: d3.scaleLinear(),
+  barWScale: d3.scaleBand(),
   barXAxis: d3.axisBottom(),
-  barYAxis: d3.axisLeft(),
-  barHeight: 350,
-  barWidth: window.innerWidth,
-  barLeftMargin: 100,
-  barRightMargin: 100,
-  barTopMargin: 20,
-  barBottomMargin: 100,
-
-  // axes attributes
-  xScale: d3.scaleLinear(),
-  yScale: d3.scalePoint(),  
-  grpScale: d3.scaleOrdinal(),
-  xAxis: d3.axisBottom(),
-  xGrid: d3.axisTop(),
-  yAxis: d3.axisRight(),
-  grpAxis: d3.axisLeft(),
-  minLabelFont: 2,
+  barWAxis: d3.axisRight(),
 
   // legend
   zColorMap: new Map([
@@ -68,1252 +126,701 @@ var state = {
     ['subflow', '#ff7f0e'],
     ['cudaflow', '#6A0DAD'],
     ['condition', '#41A317'],
-    ['module', '#0000FF']
+    ['module', '#0000FF'],
+    ['(grouped)', '#999DA0']
   ]),
   zScale: null,
   zGroup: null,
   zWidth: null,
   zHeight: null,
 
-  // date marker line
-  dateMarker: null,
-  dateMarkerLine: null,
-  
   // segmenet  
   minSegmentDuration: 0, // ms
   disableHover: false,
-  minX: null,
-  maxY: null,
   
   // transition
   transDuration: 700,
 
   // data field
-  completeStructData: [],       // executors and lines
-  completeFlatData: [],         // flat segments with gropu and line
-  completeBarData: [],        // bar char data
-  structData: null,
-  flatData: null,
+  zoomXs: [],  // scoped time data
+  zoomYs: [],  // scoped line data
+  data: null,
   totalNLines: 0,
-  nLines: 0
+  nLines: 0,
+    
+  timeFormat : function(d) {
+    if(d >= 1e9) return `${(d/1e9).toFixed(2)}G`;
+    if(d >= 1e6) return `${(d/1e6).toFixed(1)}M`;
+    if(d >= 1e3) return `${(d/1e3).toFixed(0)}K`;
+    return d;
+  }
 };
 
-// Procedure: make_tfp_structure
-function make_tfp_structure(dom_element) {
-  
-  //console.log("timeline chart created at", dom_element);
-  
-  state.dom = d3.select('#tfp').attr('class', 'tfp');
+const simple_file = "js/simple.json";
+//const simple_file = "js/wb_dma.json";
 
-  // main svg
-  state.svg = state.dom.append('svg');
-
-  //console.log("_make_tfp_structure");
-    
-  state.yScale.invert = _invertOrdinal;
-  state.grpScale.invert = _invertOrdinal;
-  
-  //_make_tfp_gradient_field();
-  _make_tfp_axes();
-  _make_tfp_legend();
-  _make_tfp_graph();
-  _make_tfp_date_marker_line();
-  _make_tfp_overview();
-  _make_tfp_bar();
-  _make_tfp_tooltips();
-  _make_tfp_events();
+async function fetchTFPData(file) {
+  const response = await fetch(file);
+  const json = await response.json();
+  return json;
 }
 
-// Procedure: feed()
-function feed(rawData) {
+class Database {
 
-  // clear the previous state
-  state.zoomX = [null, null];
-  state.zoomY = [null, null];
-  state.minX  = null;
-  state.maxX  = null;
-  state.completeStructData = [];
-  state.completeFlatData = [];
-  state.completeBarData = [];
-  state.totalNLines = 0;
+  constructor (rawData, maxSegments=10) {
 
-  // iterate executor
-  for (let i=0, ilen=rawData.length; i<ilen; i++) {
-    const executor = rawData[i].executor;
+    this.data = [];
+    this.maxSegments = maxSegments;
+    this.indexMap = new Map();
 
-    state.completeStructData.push({
-      executor: executor,
-      lines: rawData[i].data.map(d => d.worker)
-    });
-    
-    // iterate worker
-    for (let j= 0, jlen=rawData[i].data.length; j<jlen; j++) {
-      var total_time=0, stime=0, dtime=0, gtime=0, ctime=0, mtime=0;
-      // iterate segment
-      for (let k= 0, klen=rawData[i].data[j].data.length; k<klen; k++) {
-        const { span, type, name } = rawData[i].data[j].data[k];
+    let numSegments = 0, minX = null, maxX = null, k=0;
 
-        state.completeFlatData.push({
-          executor: executor,
-          worker: rawData[i].data[j].worker,
-          span: span,
-          type: type,                             // legend value
-          name: name
-        });
+    const begParse = performance.now();
 
-        if(state.minX == null || span[0] < state.minX) {
-          state.minX = span[0];
-        }
-
-        if(state.maxX == null || span[1] > state.maxX) {
-          state.maxX = span[1];
-        }
+    // iterate executor
+    for (let i=0, ilen=rawData.length; i<ilen; i++) {
+      // iterate worker
+      for (let j=0, jlen=rawData[i].data.length; j<jlen; j++) {
         
-        const elapsed = span[1] - span[0];
-        total_time += elapsed;
+        let klen = rawData[i].data[j].data.length;
 
-        switch(type) {
-          case "static":
-            stime += elapsed;
-          break;
+        this.data.push({
+          executor: rawData[i].executor,
+          worker  : rawData[i].data[j].worker,
+          segments: rawData[i].data[j].data,
+          range   : [0, klen]
+        });
+        
+        if(klen > 0) {
+          let b = rawData[i].data[j].data[0].span[0];
+          let e = rawData[i].data[j].data[klen-1].span[1];
+          if(minX == null || b < minX) minX = b;
+          if(maxX == null || e > maxX) maxX = e; 
+          numSegments += klen;
+        }
 
-          case "subflow":
-            dtime += elapsed;
-          break;
+        this.indexMap.set(`${rawData[i].executor}+&+${rawData[i].data[j].worker}`, k);
+        k = k+1;
+      }
+    }
 
-          case "cudaflow":
-            gtime += elapsed;
-          break;
+    this.numSegments = numSegments;
+    this.minX = minX;
+    this.maxX = maxX;
+  }
 
-          case "condition":
-            ctime += elapsed;
-          break;
+  query(zoomX = null, zoomY = null) {
 
-          case "module":
-            mtime += elapsed;
-          break;
+    // default selection is the entire region
+    if(zoomX == null) {
+      zoomX = [this.minX, this.maxX];
+    }
+    
+    if(zoomY == null) {
+      //zoomY = [...Array(this.data.length).keys()]
+      zoomY = d3.range(0, this.data.length);
+    }
+    else {
+      zoomY = zoomY.map(d => this.indexMap.get(`${d.executor}+&+${d.worker}`));
+    }
+    
+    console.assert(zoomX[0] <= zoomX[1]);
 
-          default:
-            console.assert(false);
-          break;
+    let R = 0;
+    let S = [];
+    
+    // find out the segments in the range
+    for(let y=0; y<zoomY.length; ++y) {
+
+      const w = zoomY[y];
+
+      console.log("bsearch worker", this.data[w].worker);
+      
+      const slen = this.data[w].segments.length;
+            
+      let l = null, r = null, beg, end, mid;
+
+      // r = maxArg {span[0] <= zoomX[1]}
+      beg = 0, end = slen;
+      while(beg < end) {
+        mid = (beg + end) >> 1;
+        if(this.data[w].segments[mid].span[0] <= zoomX[1]) {
+          beg = mid + 1;
+          r = (r == null) ? mid : Math.max(mid, r);
+        }
+        else {
+          end = mid;
         }
       }
 
-      state.completeBarData.push({
-        "executor": executor,
-        "worker": rawData[i].data[j].worker,
-        "tasks": rawData[i].data[j].data.length,
-        "static": stime,
-        "subflow": dtime,
-        "cudaflow": gtime,
-        "condition": ctime,
-        "module": mtime,
-        "busy": total_time
-      });
+      if(r == null) {
+        this.data[w].range = [0, 0];
+        continue;
+      }
 
-      state.totalNLines++;
+      // l = minArg {span[1] >= zoomX[0]}
+      beg = 0, end = slen;
+      while(beg < end) {
+        mid = (beg + end) >> 1;
+        if(this.data[w].segments[mid].span[1] >= zoomX[0]) {
+          end = mid;
+          l = (l == null) ? mid : Math.min(mid, l);
+        }
+        else {
+          beg = mid + 1;
+        }
+      };
+
+      if(l == null) {
+        this.data[w].range = [0, 0];
+        continue;
+      }
+
+      // range ok
+      if(l > r) {
+        this.data[w].range = [0, 0];
+        continue;
+      }
+      this.data[w].range = [l, r+1];
+      R += (r+1-l);
+      console.log(`  ${this.data[w].worker} has ${r+1-l} segments`);
     }
+
+    // prune to select segments
+    const P = R <= this.maxSegments ? 
+      1 : Math.pow(2, Math.ceil(Math.log2(R / this.maxSegments)));
+
+    console.log("group size", P);
+
+    // find out the segments in the range
+    for(let y=0; y<zoomY.length; ++y) {
+      
+      let total_t=0, st=0, dt=0, gt=0, ct=0, mt=0;
+
+      const w = zoomY[y];
+      const N = this.data[w].range[1]-this.data[w].range[0];
+      
+      let b = this.data[w].range[0];
+      let s = [];
+      while(b < this.data[w].range[1]) {
+        let e = Math.min(b+P, this.data[w].range[1]);
+
+        if(e - b == 1) {
+          s.push(this.data[w].segments[b]);
+        }
+        else {  // group
+          s.push({
+            span: [this.data[w].segments[b].span[0], this.data[w].segments[e-1].span[1]],
+            name: "-",
+            type: "(grouped)"
+          });
+        }
+        
+        for(let i=b; i<e; i++) {
+          const t = this.data[w].segments[i].span[1] - this.data[w].segments[i].span[0];
+          total_t += t;
+          // cumulate data
+          switch(this.data[w].segments[i].type) {
+            case "static"   : st += t; break;
+            case "subflow"  : dt += t; break;
+            case "cudaflow" : gt += t; break;
+            case "condition": ct += t; break;
+            case "module"   : mt += t; break;
+            default         : console.assert(false); break;
+          }
+        }
+
+        b = e;
+      }
+
+      S.push({
+        executor: this.data[w].executor,
+        worker: this.data[w].worker,
+        tasks: N,
+        segments: s,
+        static: st,
+        subflow: dt,
+        cudaflow: gt,
+        condition: ct,
+        module: mt,
+        totalTime: total_t
+      });
+    }
+    return S;
   }
 
-  //state.completeBarData.sort((a, b) => {
-  //  return b.busy - a.busy;
-  //});
+  minX() { return this.minX; }
 
-  // static data fields
-  state.overviewAreaDomain = [state.minX, state.maxX];
+  maxX() { return this.maxX; }
 
-  // update all dynamic fields
-  update([state.minX, state.maxX], [null, null]);
-  
-  // update the bar chart fields
-  update_bar(null, null);
+  numSegments() { return this.numSegments; }
 }
 
-// Procedure: update
-function update(zoomX, zoomY) {
-  
-  // if the successive change is small, we don't update;
-  // this also avoids potential infinite loops caused by cyclic event updates
-  if((state.zoomX[0] == zoomX[0] && state.zoomX[1] == zoomX[1] &&
-      state.zoomY[0] == zoomY[0] && state.zoomY[1] == zoomY[1]) ||
-    (Math.abs(state.zoomX[0] - zoomX[0]) < Number.EPSILON && 
-     Math.abs(state.zoomX[1] - zoomX[1]) < Number.EPSILON &&
-     Math.abs(state.zoomY[0] - zoomY[0]) < Number.EPSILON && 
-     Math.abs(state.zoomY[1] - zoomY[1]) < Number.EPSILON)) {
-    //console.log("skip update", state.zoomX, state.zoomY, zoomX, zoomY);
-    return;
-  }
-  
-  // we use zoomX and zoomY to control the update
-  state.zoomX = zoomX;
-  state.zoomY = zoomY;
-  state.overviewAreaSelection = state.zoomX;
+function _adjust_dimensions() {
 
-  //console.log("update");
+  tfp.width = tfp.dom.style('width').slice(0, -2)
+    - tfp.dom.style('padding-right').slice(0, -2)
+    - tfp.dom.style('padding-left').slice(0, -2);
 
-  _apply_filters();
-  _adjust_dimensions();
-  _adjust_xscale();
-  _adjust_yscale();
-  _adjust_grpscale();
-  _adjust_legend();
-    
-  _render_axes()
-  _render_executors();
-  _render_timelines();
-  _render_overview_area();
+  tfp.tlW = tfp.width - tfp.leftMargin - tfp.rightMargin;
+  tfp.tlH = tfp.data.length * tfp.maxLineHeight;
+  tfp.barW = tfp.tlW;
+  tfp.barH = tfp.tlH;
+
+  tfp.height = tfp.tlH + tfp.topMargin + tfp.innerMargin + tfp.barH + tfp.bottomMargin;
+
+  tfp.svg.transition().duration(tfp.transDuration)
+    .attr('width', tfp.width)
+    .attr('height', tfp.height);
 }
 
-function update_bar(selexe, seltask) {
+function _render_tlXAxis() {
 
-  var exeopt = d3.select("#tfp-bar-sel-executor").selectAll("option")
-		.data(['executor (all)', ...state.completeStructData.map(d=>d.executor)])
+  tfp.tlXScale
+    .domain(tfp.zoomXs[tfp.zoomXs.length - 1])
+    .range([0, tfp.tlW]).clamp(true);
 
-  exeopt.exit().remove();
-  exeopt = exeopt.merge(exeopt.enter().append('option')).text(d=>d);
-
-  if(selexe == null) {
-    d3.select('#tfp-bar-sel-executor').node().options[0].selected = true; 
-  }
-  if(seltask == null) {
-    d3.select('#tfp-bar-sel-task-type').node().options[0].selected = true;
-  }
-
-  var data;
+  tfp.tlXAxis.scale(tfp.tlXScale)
+    .tickSizeOuter(0)
+    .tickSize(-tfp.tlH)
+    .tickFormat(tfp.timeFormat);
+    //.tickFormat(d3.format('.2s'))
+    //.ticks(numXTicks(tfp.tlW));
   
-  //console.log("complete data", state.completeBarData, selexe, seltask);
+  tfp.tlGroup.select('g.tfp-tl-x-axis')
+    .attr('transform', `translate(0, ${tfp.tlH})`)
+    .transition().duration(tfp.transDuration)
+      .call(tfp.tlXAxis)
+      .attr('font-size', 16);
+}
 
-  // filter executor
-  data = state.completeBarData.filter( d => {
-    return (selexe == null  || d.executor == selexe);
-  });
-  
-  // filter task type
-  const keys = (seltask == null) ? Array.from(state.zColorMap.keys()) : [seltask];
+function _render_tlWAxis() {
+  tfp.tlWScale
+    .domain(tfp.data.map(d=>`${d.executor}+&+${d.worker}`))
+    .range([0, tfp.tlH]);
 
-  //console.log("keys", keys)
-
-  var stacked_data = d3.stack().keys(keys)(data);
-
-  const ymax = (seltask != null) ?  
-    d3.max(stacked_data[0], d=>d[1]) : d3.max(data, d=>d.busy)
-
-  //console.log(stacked_data)
-  //console.log("filtered data", data);
-
-  state.barXScale.padding(0.5)
-    .domain(data.map(d=>`${d.executor}+&+${d.worker}`))
-    .range([state.barLeftMargin, state.barWidth-state.barRightMargin]);
-  
-  state.barYScale
-    .domain([0, ymax])
-    .range([state.barHeight - state.barBottomMargin, state.barTopMargin]);
-  
-  //let maxChars = Math.ceil(state.rightMargin/(14/Math.SQRT2));
-
-  state.barXAxis.scale(state.barXScale)
+  tfp.tlWAxis.scale(tfp.tlWScale)
     .tickSizeOuter(0)
     .tickFormat(d => d.split('+&+')[1]);
   
-  state.barYAxis.scale(state.barYScale)
-    .tickSize(-state.barWidth+state.barLeftMargin +state.barRightMargin);
+  tfp.tlGroup.select('g.tfp-tl-w-axis')
+    .attr('transform', `translate(${tfp.tlW}, 0)`)
+    .transition().duration(tfp.transDuration)
+      .call(tfp.tlWAxis)
+      .attr('font-size', 14);
+  
+  tfp.tlGroup.select('g.tfp-tl-w-axis').selectAll('text')
+    .on('click', d => console.log(d));
+}
 
-  state.barSvg.select('g.tfp-bar-x-axis')
-    .attr('transform', `translate(0, ${state.barHeight - state.barBottomMargin})`)
-    .transition().duration(state.transDuration)
-      .call(state.barXAxis)
-    .selectAll("text")
-      .attr("y", 0)
-      .attr("x", -50)
-      .attr("dy", ".35em")
-      .attr("transform", "rotate(-90)");
+function _render_tlEAxis() {
 
-  state.barSvg.select('g.tfp-bar-y-axis')
-    .attr('transform', `translate(${state.barLeftMargin}, 0)`)
-    .transition().duration(state.transDuration)
-      .call(state.barYAxis);
+  let group = tfp.data.reduce((res, item) => {
+   res[item.executor] = [...res[item.executor] || [], item.worker];
+   return res;
+  }, {});
 
-  var l1 = state.barSvg.select('g.tfp-bar-graph')
+  group = Object.keys(group).map(e => { return {executor: e, workers: group[e]} });
+  
+  console.log(group);
+
+  tfp.tlEScale.domain(group.map(d=>d.executor));
+
+  let cntLines = 0;
+
+  tfp.tlEScale.range(group.map(d => {
+    const pos = (cntLines + d.workers.length/2)*tfp.maxLineHeight;
+    cntLines += d.workers.length;
+    return pos;
+  }));
+  
+  tfp.tlEAxis.scale(tfp.tlEScale).tickSizeOuter(0);
+  
+  tfp.tlGroup.select('g.tfp-tl-e-axis')
+    .attr('transform', `translate(0, 0)`)
+    .transition().duration(tfp.transDuration)
+      .call(tfp.tlEAxis)
+      .attr('font-size', 14)
+  
+  tfp.tlGroup.select('g.tfp-tl-e-axis').selectAll('text')
+    .on('click', d => console.log(d));
+  
+  // rect
+  var ed1 = tfp.tlGroup.select('g.tfp-tl-e-rect').selectAll('rect').data(group);
+
+  ed1.exit().transition().duration(tfp.transDuration)
+    .style('stroke-opacity', 0)
+    .style('fill-opacity', 0)
+    .remove();
+  
+  ed1 = ed1.merge(ed1.enter().append('rect')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('height', 0)
+    .attr('width', 0)
+    //.on('mouseover', tfp.executorTooltip.show)
+    //.on('mouseout', tfp.executorTooltip.hide);
+  );
+
+  ed1.transition().duration(tfp.transDuration)
+    .attr('width', tfp.tlW)
+    .attr('height', d => tfp.maxLineHeight * d.workers.length)
+    .attr('y', d => tfp.tlEScale(d.executor) - d.workers.length/2*tfp.maxLineHeight);
+}
+
+function _render_tlZAxis() {
+
+  let zGroup = tfp.tlGroup.select('g.tfp-tl-legend');
+  zGroup.transition().duration(tfp.transDuration)
+    .attr('transform', `translate(0, ${-tfp.maxLineHeight})`);
+
+  tfp.tlZScale.domain(Array.from(tfp.zColorMap.keys()));
+  tfp.tlZScale.range(Array.from(tfp.zColorMap.values()));
+
+  const zW = tfp.tlW;
+  const zH = tfp.maxLineHeight;
+  const binW = zW / tfp.tlZScale.domain().length;
+
+  let slot = zGroup.selectAll('g').data(tfp.tlZScale.domain());
+
+  slot.exit().remove();
+
+  const newslot = slot.enter().append('g')
+    .attr('transform', (d, i) => `translate(${binW * i}, -5)`);
+
+  newslot.append('rect');
+  newslot.append('text')
+    .on('click', d => console.log("click legend", d));
+  
+  slot = slot.merge(newslot);
+
+  slot.select('rect')
+    .attr('width', binW)
+    .attr('height', zH)
+    .attr('fill', d => tfp.tlZScale(d));
+
+  slot.select('text').text(d => d).attr('x', binW*0.5).attr('y', zH*0.5);
+  
+}
+
+function _render_tlSegments() {
+
+  tfp.tlLineH = tfp.tlH / tfp.data.length*0.8;
+  tfp.lineOffset = (tfp.maxLineHeight - tfp.tlLineH) / 2;
+
+  var sd1 = tfp.tlGroup.select('g.tfp-tl-s-rect').selectAll('g').data(tfp.data)
+  sd1.exit().remove();
+  sd1 = sd1.merge(sd1.enter().append('g'));
+
+  sd1.transition().duration(tfp.transDuration)
+    .attr('transform', d => {
+      const y = tfp.tlWScale(`${d.executor}+&+${d.worker}`);
+      return `translate(0, ${y})`
+    });
+
+  var sd2 = sd1.selectAll('rect').data(d => d.segments);
+  sd2.exit().remove();
+
+  sd2 = sd2.merge(sd2.enter().append('rect')
+    .attr('rx', 1)
+    .attr('ry', 1)
+    .attr('x', tfp.tlW/2)    // here we initialize the rect to avoid
+    .attr('y', tfp.tlH/2)    // NaN y error during transition
+    .attr('width', 0)
+    .attr('height', 0)
+    .style('fill-opacity', 0)
+    .on('mouseover.tlTooltip', tfp.tlTooltip.show)
+    .on('mouseout.tlTooltip', tfp.tlTooltip.hide)
+    .on("mouseover", function(d) {
+
+      if (tfp.disableHover) return;
+
+      const r = tfp.lineOffset; // enlarge ratio
+
+      d3.select(this).transition().duration(250).style('fill-opacity', 1)
+        .attr("width", d => d3.max([1, tfp.tlXScale(d.span[1])-tfp.tlXScale(d.span[0])]) + r)
+        .attr('height', tfp.tlLineH+r)
+        .attr('x', d => tfp.tlXScale(d.span[0])-r/2)
+        .attr('y', d => tfp.lineOffset-r/2);
+    })
+    .on("mouseout", function(d) {
+      d3.select(this).transition().duration(250).style('fill-opacity', .8)
+        .attr("width", d => d3.max([1, tfp.tlXScale(d.span[1])-tfp.tlXScale(d.span[0])]))
+        .attr('height', tfp.tlLineH)
+        .attr('x', d => tfp.tlXScale(d.span[0]))
+        .attr('y', d => tfp.lineOffset)
+        .style('fill', d => tfp.zColorMap.get(d.type));
+    })
+  );
+
+  sd2.transition().duration(tfp.transDuration)
+    .attr('x', d => tfp.tlXScale(d.span[0]))
+    .attr('width', d => d3.max([1, tfp.tlXScale(d.span[1])-tfp.tlXScale(d.span[0])]))
+    .attr('y', tfp.lineOffset)
+    .attr('height', tfp.tlLineH)
+    .style('fill-opacity', .8)
+    .style('fill', d => tfp.zColorMap.get(d.type));
+}
+
+function _render_tlBrush() {
+  tfp.tlBrush
+    .extent([[0, 0], [tfp.tlW, tfp.tlH]])
+    .on('end', function() { 
+
+      const s = d3.event.selection;
+      
+      console.log("brush ends at source", s); 
+
+      // Consume the brush action
+      if (s) {
+        console.log("zoom to ", s.map(x=>tfp.tlXScale.invert(x)));
+      
+        tfp.zoomXs.push(s.map(x=>tfp.tlXScale.invert(x)));
+        tfp.zoomYs.push(tfp.zoomYs[tfp.zoomYs.length-1])
+        tfp.data = tfp.database.query(
+          tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]
+        );
+        _render_tlXAxis();
+        _render_tlSegments();
+
+        tfp.tlGroup.select("g.tfp-tl-brush").call(tfp.tlBrush.move, null);
+      }
+      else { // double-click detection
+        if (!tfp.tlBrushTimeout) {
+          return (tfp.tlBrushTimeout = setTimeout(() => {
+            tfp.tlBrushTimeout = null;
+          }, 350));
+        }
+        
+        console.log("double click detected!", tfp.zoomXs, tfp.zoomYs);
+        
+        console.assert(tfp.zoomXs.length == tfp.zoomYs.length);
+        
+        if(tfp.zoomXs.length > 1) {
+          tfp.zoomXs.pop();
+          tfp.zoomYs.pop();
+          const zoomX = tfp.zoomXs[tfp.zoomXs.length-1];
+          const zoomY = tfp.zoomYs[tfp.zoomYs.length-1];
+          tfp.data = tfp.database.query(zoomX, zoomY);
+          _render_tlXAxis();
+          _render_tlSegments();
+        }
+      }
+    });
+
+  tfp.tlGroup.select('g.tfp-tl-brush').call(tfp.tlBrush);
+}
+
+function _render_tl() {
+
+  tfp.tlGroup.attr('transform', `translate(${tfp.leftMargin}, ${tfp.topMargin})`);
+
+  _render_tlXAxis();  // x-axis
+  _render_tlWAxis();  // w-axis
+  _render_tlEAxis();  // e-axis
+  _render_tlZAxis();  // z-axis
+  _render_tlSegments();  // s-rect
+  _render_tlBrush();  // brush
+}
+
+function _render_barXAxis() {
+  tfp.barXScale
+    .domain([0, d3.max(tfp.data, d=>d.totalTime)])
+    .range([0, tfp.barW]).clamp(true);
+
+  tfp.barXAxis.scale(tfp.barXScale)
+    .tickSizeOuter(0)
+    .tickSize(-tfp.barH)
+    .tickFormat(tfp.timeFormat);
+
+  tfp.barGroup.select('g.tfp-bar-x-axis')
+    .attr('transform', `translate(0, ${tfp.barH})`)
+    .transition().duration(tfp.transDuration)
+      .call(tfp.barXAxis)
+      .attr('font-size', 16);
+}
+
+function _render_barWAxis() {
+  tfp.barWScale.padding(0.2)
+    .domain(tfp.data.map(d=>`${d.executor}+&+${d.worker}`))
+    .range([0, tfp.barH]);
+  
+  tfp.barWAxis.scale(tfp.barWScale)
+    .tickSizeOuter(0)
+    .tickFormat(d => d.split('+&+')[1]);
+
+  tfp.barGroup.select('g.tfp-bar-w-axis')
+    .attr('transform', `translate(${tfp.barW}, 0)`)
+    .transition().duration(tfp.transDuration)
+      .call(tfp.barWAxis)
+      .attr('font-size', 14);
+  
+  tfp.barGroup.select('g.tfp-bar-w-axis').selectAll('text')
+    .on('click', d => console.log(d));
+}
+
+function _render_barGraph() {
+  
+  const keys = Array.from(tfp.zColorMap.keys());
+  keys.pop(); 
+
+  var stacked_data = d3.stack().keys(keys)(tfp.data);
+  var l1 = tfp.barGroup.select('g.tfp-bar-graph')
     .selectAll('g')
     .data(stacked_data);
 
   l1.exit().remove();
-  l1 = l1.enter().append('g').merge(l1).attr("fill", d => state.zColorMap.get(d.key));
+  l1 = l1.enter().append('g').merge(l1)
+    .attr("type", function(d) { return d.key; })
+    .attr("fill", d => tfp.zColorMap.get(d.key));
 
   var l2 = l1.selectAll("rect").data(d=>d);
 
   l2.exit().remove(); 
 
   var newbars = l2.enter().append("rect")
+    .attr('rx', 0)
+    .attr('ry', 0)
     .attr('width', 0)
     .attr('height', 0)
     .attr('x', 0)
     .attr('y', 0)
     .style('fill-opacity', 0.8)
-    .on('mouseover.barTooltip', state.barTooltip.show)
-    .on('mouseout.barTooltip', state.barTooltip.hide);
+    .on('mouseover.barTooltip', tfp.barTooltip.show)
+    .on('mouseout.barTooltip', tfp.barTooltip.hide);
     
   newbars
     .on('mouseover', function() {
-
-      if (state.disableHover) { return; }
-
-      //MoveToFront()(this);
-      //const hoverEnlarge = state.lineHeight*hoverEnlargeRatio;
-
-      const hoverEnlarge = state.barXScale.bandwidth()*0.02;
-
-      //  const x = state.barXScale(d.data.worker);
-      //  const y = state.barYScale(d[1]);
-      //  const w = state.barXScale.bandwidth();
-      //  const h = state.barYScale(d[0]) - state.barYScale(d[1]);
-      d3.select(this)
-        .transition().duration(250)
-        .attr('x', function(d) {
-          return state.barXScale(`${d.data.executor}+&+${d.data.worker}`)-hoverEnlarge/2; 
-        })
-        .attr('width', state.barXScale.bandwidth() + hoverEnlarge)
-        .attr('y', function(d) {
-          return state.barYScale(d[1]) - hoverEnlarge/2;
-        })
-        .attr('height', function(d) {
-          return state.barYScale(d[0]) - state.barYScale(d[1]) + hoverEnlarge;
-        })
-        .style('fill-opacity', 1);
+      if(tfp.disableHover) return;
+      d3.select(this).transition().duration(250).style('fill-opacity', 1)
+        .attr('y', d => tfp.barWScale(`${d.data.executor}+&+${d.data.worker}`))
+        .attr('x', d => tfp.barXScale(d[0]))
+        .attr('width', d => d3.max([1, tfp.barXScale(d[1]) - tfp.barXScale(d[0])]))
+        .attr('height', tfp.barWScale.bandwidth());
     })
-    .on('mouseout', function() {
-      d3.select(this)
-        .transition().duration(250)
-        .attr('width', d => state.barXScale.bandwidth())
-        .attr('height', d => state.barYScale(d[0]) - state.barYScale(d[1]))
-        .attr('x', d => state.barXScale(`${d.data.executor}+&+${d.data.worker}`))
-        .attr('y', d => state.barYScale(d[1]))
-        .style('fill-opacity', 0.8);
-    })
-
+    .on('mouseout', function(d) {
+      d3.select(this).transition().duration(250).style('fill-opacity', 0.8)
+        .attr('y', d => tfp.barWScale(`${d.data.executor}+&+${d.data.worker}`))
+        .attr('x', d => tfp.barXScale(d[0]))
+        .attr('width', d => d3.max([1, tfp.barXScale(d[1]) - tfp.barXScale(d[0])]))
+        .attr('height', tfp.barWScale.bandwidth());
+    });
 
   l2.merge(newbars)
-    .transition().duration(state.transDuration)
-    .attr('rx', 1)
-    .attr('ry', 1)
-    .attr('x', d => state.barXScale(`${d.data.executor}+&+${d.data.worker}`))
-    .attr('y', d => state.barYScale(d[1]))
-    .attr('height', d => state.barYScale(d[0]) - state.barYScale(d[1]))
-    .attr('width', state.barXScale.bandwidth());
+    .transition().duration(tfp.transDuration)
+    .attr('y', d => tfp.barWScale(`${d.data.executor}+&+${d.data.worker}`))
+    .attr('x', d => tfp.barXScale(d[0]))
+    .attr('width', d => d3.max([1, tfp.barXScale(d[1]) - tfp.barXScale(d[0])]))
+    .attr('height', tfp.barWScale.bandwidth());
 }
 
-// ----------------------------------------------------------------------------
-// private function definitions
-// ----------------------------------------------------------------------------
+function _render_bar() {
 
-// Procedure: _invertOrdinal 
-// perform interpolation
-function _invertOrdinal(type, cmpFunc) {
+  tfp.barGroup.attr('transform', 
+    `translate(${tfp.leftMargin}, ${tfp.topMargin + tfp.innerMargin + tfp.tlH})`
+  );
 
-  cmpFunc = cmpFunc || function (a, b) {
-      return (a >= b);
-    };
-
-  const scDomain = this.domain();
-  let scRange = this.range();
-
-  if (scRange.length === 2 && scDomain.length !== 2) {
-    // Special case, interpolate range types
-    scRange = d3.range(scRange[0], scRange[1], (scRange[1] - scRange[0]) / scDomain.length);
-  }
-
-  const bias = scRange[0];
-  for (let i = 0, len = scRange.length; i < len; i++) {
-    if (cmpFunc(scRange[i] + bias, type)) {
-      return scDomain[Math.round(i * scDomain.length / scRange.length)];
-    }
-  }
-
-  return this.domain()[this.domain().length-1];
+  _render_barXAxis();  
+  _render_barWAxis();
+  _render_barGraph();
 }
+
+async function main() {
   
-// Procedure: _make_tfp_date_marker_line
-function _make_tfp_date_marker_line() {
-  //console.log("making date marker ...");
-  state.dateMarkerLine = state.svg.append('line').attr('class', 'x-axis-date-marker');
-}
+  // initialize static field
+  tfp.dom = d3.select('#tfp');
+  tfp.svg = tfp.dom.append('svg').attr('width', 0).attr('height', 0);
 
-// Procedure: _make_tfp_overview
-function _make_tfp_overview() {
-  //console.log("making the overview ...");
+  tfp.tlGroup = tfp.svg.append('g').attr('class', 'tfp-tl-group');
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-legend');
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-x-axis');
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-w-axis');
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-e-axis');
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-e-rect');  // layer 1
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-brush');   // layer 2
+  tfp.tlGroup.append('g').attr('class', 'tfp-tl-s-rect');  // layer 3
+
+  tfp.barGroup = tfp.svg.append('g').attr('class', 'tfp-bar-group');
+  tfp.barGroup.append('g').attr('class', 'tfp-bar-x-axis');
+  tfp.barGroup.append('g').attr('class', 'tfp-bar-w-axis');
+  tfp.barGroup.append('g').attr('class', 'tfp-bar-graph');
+
+  //tfp.transition = tfp.svg
+  //  .transition("tfpTransition")
+  //  .duration(700)
+  //  .on("start", () => { console.log("beg zoom"); tfp.zoomInProgress = true; });
+  //  .on("end", () => { console.log("end zoom"); tfp.zoomInProgress = false; });
   
-  // overview svg
-  state.overviewAreaSvg = state.dom.append('div').append('svg').attr('class', 'brusher');
-
-  state.overviewAreaBrush
-    .handleSize(24)
-    .on('end', function() {
-      
-      //console.log("ON 'end': brush ends by source", d3.event.sourceEvent);
-      if (!d3.event.sourceEvent) {
-        return;
-      }
-      //console.log("    -> type:", d3.event.sourceEvent.type);
-
-      const selection = d3.event.selection ? 
-        d3.event.selection.map(state.overviewAreaScale.invert) : 
-        state.overviewAreaScale.domain();
-
-      // avoid infinite event loop
-      if(d3.event.sourceEvent.type === "mouseup") {
-        state.svg.dispatch('zoom', { detail: {
-          zoomX: selection,
-          zoomY: state.zoomY
-        }});
-      }
-    });
-
-  // Build dom
-  const brusher = state.overviewAreaSvg.append('g').attr('class', 'brusher-margins');
-  brusher.append('rect').attr('class', 'grid-background');
-  brusher.append('g').attr('class', 'x-grid');
-  brusher.append('g').attr('class', 'x-axis');
-  brusher.append('g').attr('class', 'brush');
-}
-
-// Procedure: _make_tfp_bar
-function _make_tfp_bar() {
-  
-  const barDiv = state.dom.append('div').attr('class', 'mt-4');
-  const selDiv = barDiv.append('div').style('margin-left', `${state.barLeftMargin}px`)
-
-  const exeSel = selDiv
-    .append('select')
-    .attr('id', 'tfp-bar-sel-executor')
-    .attr('class', 'btn-secondary')
-    .on('change', function() {
-      const tt = d3.select("#tfp-bar-sel-task-type").node().value;
-      update_bar(
-        this.value === 'executor (all)' ? null : this.value,
-        tt === 'task type (all)' ? null : tt
-      );
-    });
-
-  selDiv.append('select')
-    .attr('id', 'tfp-bar-sel-task-type')
-    .attr('class', 'ml-2 btn-secondary')
-    .on('change', function() {
-      const exe = d3.select('#tfp-bar-sel-executor').node().value;
-      update_bar(
-        exe === 'executor (all)' ? null : exe,
-        this.value === 'task type (all)' ? null : this.value
-      );
-    })
-    .selectAll('option')
-    .data(['task type (all)', ... Array.from(state.zColorMap.keys())])
-    .enter().append('option')
-    .text(d=>d);
-
-  state.barSvg = barDiv.append('svg')
-    .attr('width', state.barWidth)
-    .attr('height', state.barHeight);
-
-  state.barSvg.append('g').attr('class', 'tfp-bar-x-axis');
-  state.barSvg.append('g').attr('class', 'tfp-bar-y-axis');
-  state.barSvg.append('g').attr('class', 'tfp-bar-graph');
-}
-
-// Procedure: _make_tfp_axes
-function _make_tfp_axes() {  
-  //console.log("making the axes ...");
-  const axes = state.svg.append('g').attr('class', 'axes');
-  axes.append('g').attr('class', 'x-axis');
-  axes.append('g').attr('class', 'x-grid');
-  axes.append('g').attr('class', 'y-axis');
-  axes.append('g').attr('class', 'grp-axis');
-
-  state.yAxis.scale(state.yScale).tickSize(0);
-  state.grpAxis.scale(state.grpScale).tickSize(0);
-}
-
-// Procedure: _make_tfp_legend
-function _make_tfp_legend() {
-
-  //console.log("making the legend ...");
-
-  // add a reset text
-  state.resetBtn = state.svg.append('text')
-    .attr('class', 'reset-zoom-btn')
-    .text('Reset Zoom')
-    .on('click' , function() {
-      //console.log("ON 'click': reset btn");
-      state.svg.dispatch('resetZoom');
-    });
-  
-  // add a legend 
-  state.zScale = d3.scaleOrdinal()
-    .domain(Array.from(state.zColorMap.keys()))
-    .range(Array.from(state.zColorMap.values()));
-
-  state.zGroup = state.svg.append('g')
-                   .attr('class', 'legend');
-  state.zWidth = (state.width-state.leftMargin-state.rightMargin)*3/4;
-  state.zHeight = state.topMargin*0.8;
-
-  const binWidth = state.zWidth / state.zScale.domain().length;
-
-  //console.log(binWidth)
-
-  let slot = state.zGroup.selectAll('.z-slot')
-    .data(state.zScale.domain());
-
-  slot.exit().remove();
-
-  const newslot = slot.enter()
-    .append('g')
-    .attr('class', 'z-slot');
-
-  newslot.append('rect')
-    .attr('y', 0)
-    .attr('rx', 0)
-    .attr('ry', 0)
-    .attr('stroke-width', 0);
-
-  newslot.append('text')
-    .style('text-anchor', 'middle')
-    .style('dominant-baseline', 'central');
-
-  // Update
-  slot = slot.merge(newslot);
-
-  slot.select('rect')
-    .attr('width', binWidth)
-    .attr('height', state.zHeight)
-    .attr('x', (d, i) => binWidth*i)
-    .attr('fill', d => state.zScale(d));
-
-  slot.select('text')
-    .text(d => d)
-    .attr('x', (d, i) => binWidth*(i+.5))
-    .attr('y', state.zHeight*0.5)
-    .style('fill', '#FFFFFF');
-}
-
-// Procedure: _make_tfp_graph
-function _make_tfp_graph() {
-
-  //console.log("making the graph ...");
-
-  state.graph = state.svg.append('g');
-
-  state.graph.on('mousedown', function() {
-
-    //console.log("ON 'mousedown'");
-
-    if (d3.select(window).on('mousemove.zoomRect')!=null) // Selection already active
-      return;
-
-    const e = this;
-
-    if (d3.mouse(e)[0]<0 || d3.mouse(e)[0] > state.graphW || 
-        d3.mouse(e)[1]<0 || d3.mouse(e)[1] > state.graphH)
-      return;
-
-    state.disableHover=true;
-
-    const rect = state.graph.append('rect')
-      .attr('class', 'chart-zoom-selection');
-
-    const startCoords = d3.mouse(e);
-
-    d3.select(window)
-      .on('mousemove.zoomRect', function() {
-
-        //console.log("ON 'mousemove'");
-
-        d3.event.stopPropagation();
-        const newCoords = [
-          Math.max(0, Math.min(state.graphW, d3.mouse(e)[0])),
-          Math.max(0, Math.min(state.graphH, d3.mouse(e)[1]))
-        ];
-
-        rect.attr('x', Math.min(startCoords[0], newCoords[0]))
-          .attr('y', Math.min(startCoords[1], newCoords[1]))
-          .attr('width', Math.abs(newCoords[0] - startCoords[0]))
-          .attr('height', Math.abs(newCoords[1] - startCoords[1]));
-
-        state.overviewAreaSelection = [startCoords[0], newCoords[0]]
-                                        .sort(d3.ascending)
-                                        .map(state.xScale.invert);
-        _render_overview_area();
-        //state.svg.dispatch('zoomScent', { detail: {
-        //  zoomX: [startCoords[0], newCoords[0]].sort(d3.ascending).map(state.xScale.invert),
-        //  zoomY: [startCoords[1], newCoords[1]].sort(d3.ascending).map(d =>
-        //    state.yScale.domain().indexOf(state.yScale.invert(d))
-        //    + ((state.zoomY && state.zoomY[0])?state.zoomY[0]:0)
-        //  )
-        //}});
-      })
-      .on('mouseup.zoomRect', function() {
-
-        //console.log("ON 'mouseup'");
-
-        d3.select(window).on('mousemove.zoomRect', null).on('mouseup.zoomRect', null);
-        d3.select('body').classed('stat-noselect', false);
-        rect.remove();
-        state.disableHover=false;
-
-        const endCoords = [
-          Math.max(0, Math.min(state.graphW, d3.mouse(e)[0])),
-          Math.max(0, Math.min(state.graphH, d3.mouse(e)[1]))
-        ];
-
-        if (startCoords[0]==endCoords[0] && startCoords[1]==endCoords[1]) {
-          //console.log("no change");
-          return;
-        }
-
-        //console.log("coord", endCoords);
-
-        const newDomainX = [startCoords[0], endCoords[0]].sort(d3.ascending).map(state.xScale.invert);
-
-        const newDomainY = [startCoords[1], endCoords[1]].sort(d3.ascending).map(d =>
-          state.yScale.domain().indexOf(state.yScale.invert(d))
-          + ((state.zoomY && state.zoomY[0])?state.zoomY[0]:0)
-        );
-        
-        state.svg.dispatch('zoom', { detail: {
-          zoomX: newDomainX,
-          zoomY: newDomainY
-        }});
-      }, true);
-
-    d3.event.stopPropagation();
-  });
-}
-
-// Procedure: _make_tfp_tooltips
-function _make_tfp_tooltips() {
-
-  //console.log("making the tooltips ...");
-  
-  // executor tooltips 
-  state.executorTooltip = d3.tip()
-       .attr('class', 'tfp-tooltip')
-       .direction('w')
-       .offset([0, 0])
-       .html(d => {
-         const leftPush = (d.hasOwnProperty('span') ?
-                          state.xScale(d.span[0]) : 0);
-         const topPush = (d.hasOwnProperty('worker') ?
-                          state.grpScale(d.executor) - state.yScale(`${d.executor}+&+${d.worker}`) : 0 );
-         state.executorTooltip.offset([topPush, -leftPush]);
-         return d.executor;
-       });
-
-  state.svg.call(state.executorTooltip);
-
-  // worker tooltips
-  state.lineTooltip = d3.tip()
-       .attr('class', 'tfp-tooltip')
-       .direction('e')
-       .offset([0, 0])
-       .html(d => {
-         const rightPush = (d.hasOwnProperty('span') ? 
-                            state.xScale.range()[1]-state.xScale(d.span[1]) : 0);
-         state.lineTooltip.offset([0, rightPush]);
-         return d.worker;
-       });
-
-  state.svg.call(state.lineTooltip);
-  
-  // segment tooltips
-  state.segmentTooltip = d3.tip()
+  // tl tooltips
+  tfp.tlTooltip = d3.tip()
     .attr('class', 'tfp-tooltip')
     .direction('s')
-    .offset([5, 0])
+    .offset([10, 0])
     .html(d => {
       return `Type: ${d.type}<br>
               Name: ${d.name}<br>
               Span: [${d.span}]<br>
               Time: ${d.span[1]-d.span[0]}`;
     });
-
-  state.svg.call(state.segmentTooltip);
   
+  tfp.svg.call(tfp.tlTooltip);
+
+
   // bar tooltips
-  state.barTooltip = d3.tip()
+  tfp.barTooltip = d3.tip()
     .attr('class', 'tfp-tooltip')
-    .direction('w')
-    .offset([0, -5])
-    .html(d => {
+    .direction('s')
+    .offset([10, 0])
+    .html(function(d) {
+      //var type = this.parentNode.getAttribute("type");
+      //console.log(j, d)
       //const p = ((d[1]-d[0]) * 100 / (state.maxX - state.minX)).toFixed(2);
-      const p = ((d[1]-d[0]) * 100 / (d.data.busy)).toFixed(2);
-      return `${d.data.executor}<br>
-        ${d.data.worker}<br>
-        Time: ${d[1]-d[0]}`;
+      //const p = ((d[1]-d[0]) * 100 / (d.data.busy)).toFixed(2);
+      return `Type: ${this.parentNode.getAttribute("type")}<br>
+              Total Time: ${d[1]-d[0]}`;
     });
 
-  state.svg.call(state.barTooltip);
-}
-      
-// Proecedure: _make_tfp_events      
-function _make_tfp_events() {
+  tfp.svg.call(tfp.barTooltip);
 
-  //console.log("making dom events ...");
-
-  state.svg.on('zoom', function() {
-
-    const evData = d3.event.detail;   // passed custom parameters 
-    const zoomX = evData.zoomX;
-    const zoomY = evData.zoomY;
-    //const redraw = (evData.redraw == null) ? true : evData.redraw;
-    
-    console.assert((zoomX && zoomY));
-    //console.log("ON 'zoom'");
-
-    update(zoomX, zoomY);
-    
-    // exposed to user
-    //if (state.onZoom) {
-    //  state.onZoom(state.zoomX, state.zoomY);
-    //}
-  });
-
-  state.svg.on('resetZoom', function() {
-    //console.log("ON resetZoom");
-    update([state.minX, state.maxX], [null, null]);
-    //if (state.onZoom) state.onZoom(null, null);
-  });
-}
-
-// Procedure: _apply_filters
-function _apply_filters() {
-
-  // Flat data based on segment length
-  //state.flatData = (state.minSegmentDuration>0
-  //  ? state.completeFlatData.filter(d => (d.span[1]-d.span[0]) >= state.minSegmentDuration)
-  //  : state.completeFlatData
-  //);
-  //state.flatData = state.completeFlatData;
   
-  console.assert(state.zoomY);
+  //console.log("svg dimsntion", tfp.dom, tfp.dom.style('height'));
 
-  // zoomY
-  //if (state.zoomY == null || state.zoomY==[null, null]) {
-  if(state.zoomY == null || (state.zoomY[0] == null && state.zoomY[1] == null)) {
-    //console.log("use all y");
-    state.structData = state.completeStructData;
-    state.nLines = state.totalNLines;
-    //for (let i=0, len=state.structData.length; i<len; i++) {
-    //  state.nLines += state.structData[i].lines.length;
-    //}
-    //console.log(state.nLines, state.totalNLines);
-    return;
-  }
-
-  //console.log("filtering struct Data on ", state.zoomY[0], state.zoomY[1]);
-
-  state.structData = [];
-  const cntDwn = [state.zoomY[0] == null ? 0 : state.zoomY[0]]; // Initial threshold
-  cntDwn.push(Math.max(
-    0, (state.zoomY[1]==null ? state.totalNLines : state.zoomY[1]+1)-cntDwn[0])
-  ); // Number of lines
-
-  state.nLines = cntDwn[1];
-  for (let i=0, len=state.completeStructData.length; i<len; i++) {
-
-    let validLines = state.completeStructData[i].lines;
-
-    if (cntDwn[0]>=validLines.length) { // Ignore whole executor (before start)
-      cntDwn[0]-=validLines.length;
-      continue;
-    }
-    const executorData = {
-      executor: state.completeStructData[i].executor,
-      lines: null
-    };
-    if (validLines.length-cntDwn[0]>=cntDwn[1]) {  // Last (or first && last) executor (partial)
-      executorData.lines = validLines.slice(cntDwn[0],cntDwn[1]+cntDwn[0]);
-      state.structData.push(executorData);
-      cntDwn[1]=0;
-      break;
-    }
-    if (cntDwn[0]>0) {  // First executor (partial)
-      executorData.lines = validLines.slice(cntDwn[0]);
-      cntDwn[0]=0;
-    } else {  // Middle executor (full fit)
-      executorData.lines = validLines;
-    }
-
-    state.structData.push(executorData);
-    cntDwn[1]-=executorData.lines.length;
-  }
-
-  state.nLines-=cntDwn[1];
-  //console.log("filtered lines:", state.nLines);
-}
-
-
-function _adjust_dimensions() {
-  //console.log("adjusting up dimensions ... nLines =", state.nLines);
-  state.graphW = state.width - state.leftMargin - state.rightMargin;
-  state.graphH = state.nLines*state.maxLineHeight;
-  state.height = state.graphH + state.topMargin + state.bottomMargin;
-  //console.log("transition to", state.width, state.height, " graph", state.graphH, state.graphW);
-  state.svg//.transition().duration(state.transDuration)
-    .attr('width', state.width)
-    .attr('height', state.height);
-
-  state.graph.attr('transform', `translate(${state.leftMargin}, ${state.topMargin})`);
-}
-
-function _adjust_xscale() {
-  console.assert(state.zoomX[0] && state.zoomX[1]);
-  //console.log("adjusting xscale to", state.zoomX);
-  state.xScale.domain(state.zoomX)
-              .range([0, state.graphW])
-              .clamp(true);
-}
-
-// Procedure: _adjust_yscale
-function _adjust_yscale() {
-
-  let workers = [];
-  for (let i= 0, len=state.structData.length; i<len; i++) {
-    workers = workers.concat(state.structData[i].lines.map(function (d) {
-      return `${state.structData[i].executor}+&+${d}`
-    }));
-  }
-
-  //console.log("adjusting yscale to", workers);
-  state.yScale.domain(workers);
-  //console.log(state.graphH/workers.length*0.5, state.graphH*(1-0.5/workers.length));
-  state.yScale.range([state.graphH/workers.length*0.5, state.graphH*(1-0.5/workers.length)]);
-}
-    
-// Procedure: _adjust_grpscale
-function _adjust_grpscale() {
-  //console.log("adjusting executor domain", state.structData.map(d => d.executor));
-  state.grpScale.domain(state.structData.map(d => d.executor));
-
-  let cntLines = 0;
-
-  state.grpScale.range(state.structData.map(d => {
-    const pos = (cntLines + d.lines.length/2)/state.nLines*state.graphH;
-    cntLines += d.lines.length;
-    return pos;
-  }));
-}
-
-// Procedure: _adjust_legend
-function _adjust_legend() {
-  //console.log("adjusting legend ...");
-  state.resetBtn//.transition().duration(state.transDuration)
-    .attr('x', state.leftMargin + state.graphW*.99)
-    .attr('y', state.topMargin *.8);
+  let begFetch = performance.now();
+  const res = await fetchTFPData(simple_file);
+  let endFetch = performance.now();
   
-  state.zGroup//.transition().duration(state.transDuration)
-    .attr('transform', `translate(${state.leftMargin}, ${state.topMargin * .1})`);
-}
-
-// Procedure: _render_axes
-function _render_axes() {
-
-  state.svg.select('.axes')
-    .attr('transform', `translate(${state.leftMargin}, ${state.topMargin})`);
-
-  // X
-  const nXTicks = num_xticks(state.graphW);
-
-  //console.log("rendering axes nXTicks =", nXTicks);
-
-  state.xAxis
-    .scale(state.xScale)
-    .ticks(nXTicks);
-
-  state.xGrid
-    .scale(state.xScale)
-    .ticks(nXTicks)
-    .tickFormat('');
-
-  state.svg.select('g.x-axis')
-    .style('stroke-opacity', 0)
-    .style('fill-opacity', 0)
-    .attr('transform', `translate(0, ${state.graphH})`)
-    .transition().duration(state.transDuration)
-      .call(state.xAxis)
-      .style('stroke-opacity', 1)
-      .style('fill-opacity', 1);
-
-  /* Angled x axis workers
-   state.svg.select('g.x-axis').selectAll('text')
-   .style('text-anchor', 'end')
-   .attr('transform', 'translate(-10, 3) rotate(-60)');
-   */
-
-  state.xGrid.tickSize(state.graphH);
-  state.svg.select('g.x-grid')
-    .attr('transform', `translate(0, ${state.graphH})`)
-    .transition().duration(state.transDuration)
-    .call(state.xGrid);
-
-  if (
-    state.dateMarker &&
-    state.dateMarker >= state.xScale.domain()[0] &&
-    state.dateMarker <= state.xScale.domain()[1]
-  ) {
-    state.dateMarkerLine
-      .style('display', 'block')
-      .transition().duration(state.transDuration)
-        .attr('x1', state.xScale(state.dateMarker) + state.leftMargin)
-        .attr('x2', state.xScale(state.dateMarker) + state.leftMargin)
-        .attr('y1', state.topMargin + 1)
-        .attr('y2', state.graphH + state.topMargin)
-  } else {
-    state.dateMarkerLine.style('display', 'none');
-  }
-
-  // Y
-  const fontVerticalMargin = 0.6;
-  const workerDisplayRatio = Math.ceil(
-    state.nLines*state.minLabelFont/Math.SQRT2/state.graphH/fontVerticalMargin
-  );
-  const tickVals = state.yScale.domain().filter((d, i) => !(i % workerDisplayRatio));
-  let fontSize = Math.min(14, state.graphH/tickVals.length*fontVerticalMargin*Math.SQRT2);
-  let maxChars = Math.ceil(state.rightMargin/(fontSize/Math.SQRT2));
-
-  state.yAxis.tickValues(tickVals);
-  state.yAxis.tickFormat(d => reduceLabel(d.split('+&+')[1], maxChars));
-  state.svg.select('g.y-axis')
-    .transition().duration(state.transDuration)
-      .attr('transform', `translate(${state.graphW}, 0)`)
-      .attr('font-size', `${fontSize}px`)
-      .call(state.yAxis);
-
-  // Grp
-  const minHeight = d3.min(state.grpScale.range(), function (d, i) {
-    return i>0 ? d-state.grpScale.range()[i-1] : d*2;
-  });
-
-  fontSize = Math.min(14, minHeight*fontVerticalMargin*Math.SQRT2);
-  maxChars = Math.ceil(state.leftMargin/(fontSize/Math.SQRT2));
+  let begParse = performance.now();
+  tfp.database = new Database(res);
+  let endParse = performance.now();
   
-  //console.log(minHeight, maxChars, fontSize);
+  //console.log(database.data, database.numSegments);
+  console.log(`Fetch time: ${endFetch - begFetch} ms`);
+  console.log(`Parse time: ${endParse - begParse} ms`);
 
-  state.grpAxis.tickFormat(d => reduceLabel(d, maxChars));
-  state.svg.select('g.grp-axis')
-    .transition().duration(state.transDuration)
-    .attr('font-size', `${fontSize}px`)
-    .call(state.grpAxis);
-
-  //// Make Axises clickable
-  //if (state.onLabelClick) {
-  //  console.log("register callback")
-  //  state.svg.selectAll('g.y-axis,g.grp-axis').selectAll('text')
-  //    .style('cursor', 'pointer')
-  //    .on('click', function(d) {
-  //      const segms = d.split('+&+');
-  //      //state.onLabelClick(...segms.reverse());
-  //      console.log("click on", d);
-  //    });
-  //}
-
-
-}
-
-// Procedure: _render_executors
-function _render_executors() {
-
-  let executors = state.graph.selectAll('rect.series-executor').data(state.structData, d => d.executor);
-  //console.log("rendering executors", executors);
-      
-  executors.exit()
-    .transition().duration(state.transDuration)
-    .style('stroke-opacity', 0)
-    .style('fill-opacity', 0)
-    .remove();
-
-  const newGroups = executors.enter().append('rect')
-    .attr('class', 'series-executor')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('height', 0)
-    .on('mouseover', state.executorTooltip.show)
-    .on('mouseout', state.executorTooltip.hide);
-
-  newGroups.append('title')
-    .text('click-drag to zoom in');
-
-  executors = executors.merge(newGroups);
-
-  executors.transition().duration(state.transDuration)
-    .attr('width', state.graphW)
-    .attr('height', function (d) {
-      return state.graphH*d.lines.length/state.nLines;
-    })
-    .attr('y', function (d) {
-      return state.grpScale(d.executor)-state.graphH*d.lines.length/state.nLines/2;
-    });
-}
-
-// procedure: _render_timelines
-function _render_timelines(maxElems) {
-
-  //console.log("rendering timelines ...");
-
-  if (maxElems == undefined || maxElems < 0) {
-    maxElems = null;
-  }
-
-  const hoverEnlargeRatio = .4;
-
-  const dataFilter = (d, i) =>
-    (maxElems == null || i<maxElems) &&
-    (state.grpScale.domain().indexOf(d.executor)+1 &&
-     d.span[1]>=state.xScale.domain()[0] &&
-     d.span[0]<=state.xScale.domain()[1] &&
-     state.yScale.domain().indexOf(`${d.executor}+&+${d.worker}`)+1);
-
-  state.lineHeight = state.graphH/state.nLines*0.8;
-
-  let timelines = state.graph.selectAll('rect.series-segment').data(
-    //state.flatData.filter(dataFilter),
-    state.completeFlatData.filter(dataFilter),
-    d => d.executor + d.worker + d.type + d.span[0]
+  tfp.zoomXs.push([tfp.database.minX, tfp.database.maxX]);
+  tfp.zoomYs.push([
+    {executor: "executor 0", worker: "worker 1"},
+    {executor: "executor 0", worker: "worker 2"},
+    {executor: "executor 0", worker: "worker 3"},
+    {executor: "executor 1", worker: "worker 1"}
+  ])
+  tfp.data = tfp.database.query(
+    tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]
   );
 
-  timelines.exit().remove();
-    //.transition().duration(state.transDuration)
-    //.style('fill-opacity', 0)
-    //.remove();
+  console.log(tfp.data)
 
-  const newSegments = timelines.enter().append('rect')
-    .attr('class', 'series-segment')
-    .attr('rx', 1)
-    .attr('ry', 1)
-    .attr('x', state.graphW/2)    // here we initialize the rect to avoid
-    .attr('y', state.graphH/2)    // NaN y error during transition
-    .attr('width', 0)
-    .attr('height', 0)
-    .style('fill-opacity', 0)
-    .style('fill', d => state.zColorMap.get(d.type))
-    .on('mouseover.executorTooltip', state.executorTooltip.show)
-    .on('mouseout.executorTooltip', state.executorTooltip.hide)
-    .on('mouseover.lineTooltip', state.lineTooltip.show)
-    .on('mouseout.lineTooltip', state.lineTooltip.hide)
-    .on('mouseover.segmentTooltip', state.segmentTooltip.show)
-    .on('mouseout.segmentTooltip', state.segmentTooltip.hide);
-
-  newSegments
-    .on('mouseover', function() {
-
-      if (state.disableHover) { return; }
-
-      //MoveToFront()(this);
-
-      const hoverEnlarge = state.lineHeight*hoverEnlargeRatio;
-
-      d3.select(this)
-        .transition().duration(250)
-        .attr('x', function (d) {
-          return state.xScale(d.span[0])-hoverEnlarge/2;
-        })
-        .attr('width', function (d) {
-          return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])])+hoverEnlarge;
-        })
-        .attr('y', function (d) {
-          return state.yScale(`${d.executor}+&+${d.worker}`)-(state.lineHeight+hoverEnlarge)/2;
-        })
-        .attr('height', state.lineHeight+hoverEnlarge)
-        .style('fill-opacity', 1);
-    })
-    .on('mouseout', function() {
-      d3.select(this)
-        .transition().duration(250)
-        .attr('x', function (d) {
-          return state.xScale(d.span[0]);
-        })
-        .attr('width', function (d) {
-          return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])]);
-        })
-        .attr('y', function (d) {
-          return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
-        })
-        .attr('height', state.lineHeight)
-        .style('fill-opacity', .8);
-    })
-    .on('click', function (s) {
-      if (state.onSegmentClick)
-        state.onSegmentClick(s);
-    });
-
-  timelines = timelines.merge(newSegments);
-
-  timelines.transition().duration(state.transDuration)
-    .attr('x', function (d) {
-      return state.xScale(d.span[0]);
-    })
-    .attr('width', function (d) {
-      return d3.max([1, state.xScale(d.span[1])-state.xScale(d.span[0])]);
-    })
-    .attr('y', function (d) {
-      return state.yScale(`${d.executor}+&+${d.worker}`)-state.lineHeight/2;
-    })
-    .attr('height', state.lineHeight)
-    .style('fill-opacity', .8);
+  _adjust_dimensions();
+  _render_tl();
+  _render_bar();
 }
 
-function _render_overview_area()  {
+main();
 
-  //console.log("rendering overview...")
-  
-  // domain is not set up yet
-  if (state.overviewAreaDomain[0] == null || state.overviewAreaDomain[1] == null) {
-    return;
-  }
+//console.log(simple);
 
-  const brushWidth = state.graphW;
-  const brushHeight = 20;
-  const nXTicks = num_xticks(brushWidth);
-
-  //console.log("brush ", brushWidth, brushHeight);
-
-  state.overviewAreaScale
-    .domain(state.overviewAreaDomain)
-    .range([0, brushWidth]);
-
-  state.overviewAreaXAxis
-    .scale(state.overviewAreaScale)
-    .ticks(nXTicks);
-
-  state.overviewAreaXGrid
-    .scale(state.overviewAreaScale)
-    .tickSize(-brushHeight);
-
-  state.overviewAreaSvg
-    .attr('width', state.width)
-    .attr('height', brushHeight + state.overviewAreaTopMargin
-                                + state.overviewAreaBottomMargin);
-
-  state.overviewAreaSvg.select('.brusher-margins')
-    .attr('transform', `translate(${state.leftMargin}, ${state.overviewAreaTopMargin})`);
-
-  state.overviewAreaSvg.select('.grid-background')
-    //.attr('transform', `translate(${state.leftMargin},${})`)
-    .attr('width', brushWidth)
-    .attr('height', brushHeight);
-
-  state.overviewAreaSvg.select('.x-grid')
-    .attr('transform', `translate(0, ${brushHeight})`)
-    .call(state.overviewAreaXGrid);
-
-  state.overviewAreaSvg.select('.x-axis')
-    .attr("transform", `translate(0, ${brushHeight})`)
-    .call(state.overviewAreaXAxis)
-    .selectAll('text').attr('y', 8);
-
-  state.overviewAreaSvg.select('.brush')
-    .call(state.overviewAreaBrush.extent([[0, 0], [brushWidth, brushHeight]]))
-    .call(state.overviewAreaBrush.move, state.overviewAreaSelection.map(state.overviewAreaScale));
-}
-
-
-// ----------------------------------------------------------------------------
-// Helper functions
-// ----------------------------------------------------------------------------
-function num_xticks(W) {
-  return Math.max(2, Math.min(12, Math.round(W * 0.012)));
-}
-  
-function reduceLabel(worker, maxChars) {
-  return worker.length <= maxChars ? worker : (
-    worker.substring(0, maxChars*2/3)
-    + '...'
-    + worker.substring(worker.length - maxChars/3, worker.length
-  ));
-}
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-
-// Example: Matrix multiplication
-$('#tfp_matmul').on('click', function() {
-  tfp_render_matmul();
-})
-
-$('#tfp_kmeans').on('click', function() {
-  tfp_render_kmeans();
-})
-
-$('#tfp_inference').on('click', function() {
-  tfp_render_inference();
-})
-
-$('#tfp_dreamplace').on('click', function() {
-  tfp_render_dreamplace();
-})
-
-// textarea changer event
-$('#tfp_textarea').on('input propertychange paste', function() {
-
-  if($(this).data('timeout')) {
-    clearTimeout($(this).data('timeout'));
-  }
-
-  $(this).data('timeout', setTimeout(()=>{
-    
-    var text = $('#tfp_textarea').val().trim();
-    
-    $('#tfp_textarea').removeClass('is-invalid');
-
-    if(!text) {
-      return;
-    }
-    
-    try {
-      var json = JSON.parse(text);
-      //console.log(json);
-      feed(json);
-    }
-    catch(e) {
-      $('#tfp_textarea').addClass('is-invalid');
-      console.error(e);
-    }
-
-  }, 2000));
-});
-
-function tfp_render_simple() {
-  feed(simple);
-  $('#tfp_textarea').text(JSON.stringify(simple, null, 2));
-}
-
-function tfp_render_matmul() {
-  feed(matmul);
-  $('#tfp_textarea').text(JSON.stringify(matmul));
-}
-
-function tfp_render_kmeans() {
-  feed(kmeans);
-  $('#tfp_textarea').text(JSON.stringify(kmeans));
-}
-
-function tfp_render_inference() {
-  feed(inference);
-  $('#tfp_textarea').text(JSON.stringify(inference))
-}
-
-function tfp_render_dreamplace() {
-  feed(dreamplace);
-  $('#tfp_textarea').text(JSON.stringify(dreamplace))
-}
-
-// ----------------------------------------------------------------------------
-
-// DOM objects
-make_tfp_structure();
-
-tfp_render_simple();
+//tfp_render_simple();
 //tfp_render_dreamplace();
-
-
-
 
 
 

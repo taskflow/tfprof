@@ -1,83 +1,5 @@
 
-.tfp .axes .x-axis {
-  font-size: 1rem;
-  font-family: sans-serif;
-}
-
-.tfp .axes .x-grid line {
-  stroke: #D3D3D3;
-}
-
-.tfp .axes line, path {
-  stroke: #808080;
-}
-
-.tfp .axes .y-axis line, path {
-  stroke: none;
-}
-
-.tfp .axes .grp-axis line, path {
-  stroke: none;
-}
-
-.tfp .brusher .x-grid line {
-  stroke: #fff;
-}
-
-.tfp .brusher .x-axis {
-  font-size: 1rem;
-  font-family: sans-serif;
-}
-
-.tfp .series-segment {
-  stroke: none;
-  cursor: crosshair;
-}
-
-.tfp .series-executor {
-  cursor: crosshair;
-  fill-opacity: 0.6;
-  stroke: #808080;
-  stroke-opacity: 0.2;
-  fill: #FFFFFF;
-}
-  
-.tfp .reset-zoom-btn {
-  font-family: sans-serif;
-  font-size: 1rem;
-  fill: blue;
-  opacity: .6;
-  cursor: pointer;
-  text-anchor: end;
-}
-
-.tfp .legend text {
-  font-family: sans-serif;
-  font-size: 1rem;
-  text-anchor: start;
-}
-
-.tfp .reset-zoom-btn:hover {
-  opacity: 1;
-}
-
-.tfp .brusher .grid-background {
-  fill: lightgrey;
-}
-
-.tfp .brusher .axis path {
-  display: none;
-}
-
-.tfp .brusher .tick text {
-  text-anchor: middle;
-}
-
-.tfp .brusher .grid line, path {
-  stroke: #fff;
-}
-
-.tfp .chart-zoom-selection, .brusher .brush .selection {
+.tfp-tl-brush .selection {
   stroke: blue;
   stroke-opacity: 0.6;
   fill: blue;
@@ -85,21 +7,85 @@
   shape-rendering: crispEdges;
 }
 
+/* new */
 .tfp-tooltip {
   color: white;
   background: black;
   padding: 6px;
-  border-radius: 3px;
+  border-radius: 8px;
   font: 14px sans-serif;
   z-index: 4000;
   font-size: 1rem;
-  font-weight: bold;
+  text-align: center;
+  pointer-events: none;
+}
+
+.tfp-tooltip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25B2";
+  position: absolute;
   text-align: center;
 }
 
-.tfp-bar-x-axis {
-  font-size: 1rem;
+.tfp-tooltip.s:after {
+  margin: 0 0 0 0;
+  bottom: 97%;
+  left: 0;
+}
+
+.tfp-tl-legend text {
+  cursor: pointer;
   font-family: sans-serif;
+  font-size: 12;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: #FFFFFF;
+}
+
+.tfp-tl-legend rect {
+  rx: 1;
+  ry: 1;
+  stroke-width: 0;
+}
+
+.tfp-tl-w-axis line, path {
+  stroke: #808080;
+  stroke-opacity: 0.5;
+}
+
+.tfp-tl-w-axis text {
+  cursor: pointer;
+}
+
+.tfp-tl-e-axis line, path {
+  stroke: #808080;
+  stroke-opacity: 0.5;
+}
+
+.tfp-tl-e-rect rect {
+  fill-opacity: 0.5;
+  stroke: #808080;
+  stroke-opacity: 0.2;
+  fill: none;
+}
+
+.tfp-tl-e-axis text {
+  cursor: pointer;
+}
+
+.tfp-tl-x-axis line, path {
+  stroke: #808080;
+  stroke-opacity: 0.2;
+}
+
+.tfp-tl-s-rect rect {
+  stroke: none;
+  cursor: pointer;
 }
 
 .tfp-bar-x-axis line, path {
@@ -107,13 +93,17 @@
   stroke-opacity: 0.5;
 }
 
-.tfp-bar-y-axis {
-  font-size: 1rem;
-  font-family: sans-serif;
-}
-
-.tfp-bar-y-axis line, path {
+.tfp-bar-w-axis line, path {
   stroke: #808080;
   stroke-opacity: 0.5;
+}
+
+.tfp-bar-w-axis text {
+  cursor: pointer;
+}
+
+.tfp-bar-graph rect {
+  stroke: none;
+  cursor: pointer;
 }
 
