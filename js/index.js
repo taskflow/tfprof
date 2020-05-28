@@ -139,7 +139,7 @@ const tfp = {
   disableHover: false,
   
   // transition
-  transDuration: 700,
+  transDuration: 1000,
 
   // data field
   zoomXs: [],  // scoped time data
@@ -582,6 +582,8 @@ function _render_tlBrush() {
         );
         _render_tlXAxis();
         _render_tlSegments();
+        _render_barXAxis();
+        _render_barGraph();
 
         tfp.tlGroup.select("g.tfp-tl-brush").call(tfp.tlBrush.move, null);
       }
@@ -604,6 +606,8 @@ function _render_tlBrush() {
           tfp.data = tfp.database.query(zoomX, zoomY);
           _render_tlXAxis();
           _render_tlSegments();
+          _render_barXAxis();
+          _render_barGraph();
         }
       }
     });
@@ -774,10 +778,10 @@ async function main() {
     .html(function(d) {
       //var type = this.parentNode.getAttribute("type");
       //console.log(j, d)
-      //const p = ((d[1]-d[0]) * 100 / (state.maxX - state.minX)).toFixed(2);
-      //const p = ((d[1]-d[0]) * 100 / (d.data.busy)).toFixed(2);
+      const p = ((d[1]-d[0]) * 100 / (d.data.totalTime)).toFixed(2);
       return `Type: ${this.parentNode.getAttribute("type")}<br>
-              Total Time: ${d[1]-d[0]}`;
+              Total Time: ${d[1]-d[0]}<br>
+              Ratio: ${p}%`;
     });
 
   tfp.svg.call(tfp.barTooltip);
