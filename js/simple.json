@@ -1,4 +1,4 @@
-[
+const simple = [
 {
   "executor": "executor 0",
   "data": [
