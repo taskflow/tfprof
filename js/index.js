@@ -67,7 +67,7 @@ const tfp = {
     ['cudaflow', '#6A0DAD'],
     ['condition', '#41A317'],
     ['module', '#0000FF'],
-    ['(grouped)', '#999DA0']
+    ['clustered', '#999DA0']
   ]),
   zScale: null,
 
@@ -122,7 +122,7 @@ class Database {
           executor: rawData[i].executor,
           //worker  : rawData[i].data[j].worker,
           worker  : `E${i}.w${j}`,
-          segs: rawData[i].data[j].data,
+          segs    : rawData[i].data[j].data,
           range   : [0, klen]
         });
         
@@ -274,7 +274,8 @@ class Database {
           s.push({
             span: [this.data[w].segs[b].span[0], this.data[w].segs[e].span[1]],
             name: "-",
-            type: "(grouped)"
+            type: "clustered",
+            cluster: [b, e]
           });
         }
 
@@ -341,7 +342,7 @@ class Database {
           s.push({
             span: [this.data[w].segs[b].span[0], this.data[w].segs[e-1].span[1]],
             name: "-",
-            type: "(grouped)"
+            type: "clustered"
           });
         }
         
@@ -766,17 +767,20 @@ function _render_load() {
 }
 
 function _render_rankGraph(limit=50) {
-  
+
   // process data
   let rank = [];
   for(let w=0; w<tfp.data.length; w++) {
     for(let s=0; s<tfp.data[w].segs.length; s++) {
-      rank.push([w, s, tfp.data[w].segs[s].span[1] - tfp.data[w].segs[s].span[0]]);
+      //rank.push([w, s, tfp.data[w].segs[s].span[1] - tfp.data[w].segs[s].span[0]]);
+      for(let c=tfp.data[w].segs[s].cluster[0]; c<=tfp.data[w].segs[s].cluster[1]; c++) {
+        rank.push([w, c, tfp.db.data[w].segs[c].span[1] - tfp.db.data[w].segs[c].span[0]]);
+      }
     }
   }
 
   rank = rank.sort((a, b) => b[2] - a[2]).slice(0, limit);
-
+  
   // x-axis
   tfp.rankXScale.domain(rank).range([0, tfp.rankW]).padding(0.2);
 
@@ -820,7 +824,7 @@ function _render_rankGraph(limit=50) {
         .attr('y', d=>tfp.rankYScale(d[2]))
         .attr('width', tfp.rankXScale.bandwidth())
         .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
-        .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
+        .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
     })
     .on("mouseout", function(d) {
       d3.select(this).transition().duration(250).style('fill-opacity', .8)
@@ -828,7 +832,7 @@ function _render_rankGraph(limit=50) {
         .attr('y', d=>tfp.rankYScale(d[2]))
         .attr('width', tfp.rankXScale.bandwidth())
         .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
-        .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
+        .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
     });
 
   bars = bars.merge(newBars);
@@ -839,7 +843,7 @@ function _render_rankGraph(limit=50) {
     .attr('width', tfp.rankXScale.bandwidth())
     .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
     .style('fill-opacity', .8)
-    .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
+    .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
 
   // xlabel
   tfp.rankG.select('text.tfp-rank-label')
@@ -1017,7 +1021,7 @@ async function main() {
     .attr('class', 'tfp-tooltip')
     .direction('s')
     .offset([10, 0])
-    .html(d=> `Type: ${tfp.data[d[0]].segs[d[1]].type}<br>Name: ${tfp.data[d[0]].segs[d[1]].name}<br>Time: ${d[2]}`);
+    .html(d=> `Type: ${tfp.db.data[d[0]].segs[d[1]].type}<br>Name: ${tfp.db.data[d[0]].segs[d[1]].name}<br>Time: ${d[2]}`);
 
   tfp.svg.call(tfp.rankTooltip);
   
@@ -1051,7 +1055,7 @@ function feed(input) {
 
 function render_simple() {
   feed(simple);
-  $('#tfp_textarea').text(JSON.stringify(simple, null, 2));
+  $('#tfp_textarea').text(JSON.stringify(simple));
 }
 
 function render_matmul() {
