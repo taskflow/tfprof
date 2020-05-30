@@ -101,7 +101,7 @@ async function fetchTFPData(file) {
 
 class Database {
 
-  constructor (rawData, maxSegments=100) {
+  constructor (rawData, maxSegments=500) {
 
     this.data = [];
     this.maxSegments = maxSegments;
@@ -158,7 +158,7 @@ class Database {
     else {
       zoomY = zoomY.map(d => this.indexMap.get(`${d.executor}+&+${d.worker}`));
     }
-    
+
     console.assert(zoomX[0] <= zoomX[1]);
 
     let R = 0;
@@ -170,7 +170,7 @@ class Database {
 
       const w = zoomY[y];
 
-      console.log("bsearch worker", this.data[w].worker);
+      //console.log("bsearch worker", this.data[w].worker);
       
       const slen = this.data[w].segs.length;
             
@@ -219,15 +219,11 @@ class Database {
       }
       this.data[w].range = [l, r+1];
       R += (r+1-l);
-      console.log(`  ${this.data[w].worker} has ${r+1-l} segs`);
+      //console.log(`  ${this.data[w].worker} has ${r+1-l} segs`);
 
       for(let s=l; s<=r; s++) {
         if(s != r) {
-          G.push({
-            w:w, 
-            s:s, 
-            d: this.data[w].segs[s+1].span[0] - this.data[w].segs[s].span[1]
-          });
+          G.push({w:w, s:s, d: this.data[w].segs[s+1].span[0] - this.data[w].segs[s].span[1]});
         }
         this.data[w].segs[s].cluster = [s, s];
       }
@@ -317,7 +313,7 @@ class Database {
       });
     }
 
-    console.log("resolution:", R, numDrawn);
+    //console.log("resolution:", R, numDrawn);
 
     /*// prune to select segs
     const P = R <= this.maxSegments ? 
@@ -456,8 +452,8 @@ function _render_tlWAxis() {
       .call(tfp.tlWAxis)
       .attr('font-size', 14);
   
-  tfp.tlG.select('g.tfp-tl-w-axis').selectAll('text')
-    .on('click', d => console.log(d));
+  //tfp.tlG.select('g.tfp-tl-w-axis').selectAll('text')
+  //  .on('click', d => console.log(d));
 }
 
 function _render_tlEAxis() {
@@ -522,8 +518,8 @@ function _render_tlZAxis() {
     .attr('transform', (d, i) => `translate(${binW * i}, -5)`);
 
   newslot.append('rect');
-  newslot.append('text')
-    .on('click', d => console.log("click legend", d));
+  newslot.append('text');
+  //  .on('click', d => console.log("click legend", d));
   
   slot = slot.merge(newslot);
 
@@ -532,9 +528,9 @@ function _render_tlZAxis() {
     .attr('height', zH)
     .attr('fill', d => tfp.tlZScale(d));
 
-  slot.select('text').text(d => d).attr('x', binW*0.5).attr('y', zH*0.5)
+  slot.select('text')
+    .text(d => d).attr('x', binW*0.5).attr('y', zH*0.5)
     .style('font-size', 14);
-  
 }
 
 function _render_tlSegs() {
@@ -769,7 +765,7 @@ function _render_load() {
   _render_loadGraph();
 }
 
-function _render_rankGraph() {
+function _render_rankGraph(limit=50) {
   
   // process data
   let rank = [];
@@ -779,7 +775,7 @@ function _render_rankGraph() {
     }
   }
 
-  rank = rank.sort((a, b) => b[2] - a[2]).slice(0, 50);
+  rank = rank.sort((a, b) => b[2] - a[2]).slice(0, limit);
 
   // x-axis
   tfp.rankXScale.domain(rank).range([0, tfp.rankW]).padding(0.2);
@@ -787,7 +783,7 @@ function _render_rankGraph() {
   tfp.rankXAxis.scale(tfp.rankXScale).tickFormat('');
 
   tfp.rankG.select('g.tfp-rank-x-axis')
-    //.attr('transform', `translate(0, ${tfp.rankH})`)
+    .attr('transform', `translate(0, ${tfp.rankH})`)
     .transition().duration(tfp.transDuration)
       .call(tfp.rankXAxis);
   
@@ -928,7 +924,7 @@ async function main() {
     if (s) {
       const zoomX = s.map(tfp.tlXScale.invert);
       const zoomY = tfp.zoomYs[tfp.zoomYs.length - 1];
-      console.log("zoom to ", zoomX);
+      //console.log("zoom to ", zoomX);
       tfp.zoomXs.push(zoomX);
       tfp.zoomYs.push(zoomY);
       queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
@@ -974,7 +970,7 @@ async function main() {
       if(d3.event.sourceEvent.type === "mouseup") {
         const zoomX = d3.event.selection.map(tfp.ovXScale.invert);
         const zoomY = tfp.zoomYs[tfp.zoomYs.length - 1];
-        console.log("ovBrush fires zoomX", zoomX);
+        //console.log("ovBrush fires zoomX", zoomX);
         tfp.zoomXs.push(zoomX);
         tfp.zoomYs.push(zoomY);
         queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
@@ -1021,11 +1017,7 @@ async function main() {
     .attr('class', 'tfp-tooltip')
     .direction('s')
     .offset([10, 0])
-    .html(d=> {
-      return `Type: ${tfp.data[d[0]].segs[d[1]].type}<br>
-              Name: ${tfp.data[d[0]].segs[d[1]].name}<br>
-              Time: ${d[2]}`;
-    });
+    .html(d=> `Type: ${tfp.data[d[0]].segs[d[1]].type}<br>Name: ${tfp.data[d[0]].segs[d[1]].name}<br>Time: ${d[2]}`);
 
   tfp.svg.call(tfp.rankTooltip);
   
@@ -1044,11 +1036,11 @@ function feed(input) {
   tfp.ovXSel = [tfp.db.minX, tfp.db.maxX];
   let endParse = performance.now();
   
-  tfp.zoomXs.push([tfp.db.minX, tfp.db.maxX]);
-  tfp.zoomYs.push(null);
+  tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
+  tfp.zoomYs = [null];
   queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
 
-  console.log(tfp.data)
+  //console.log(tfp.data)
 
   _adjust_dimensions();
   _render_tl();
