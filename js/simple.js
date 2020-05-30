@@ -1,4 +1,4 @@
-const simple = [
+[
 {
   "executor": "executor 0",
   "data": [
@@ -13,22 +13,22 @@ const simple = [
         {
           "span": [9,13],
           "name": "t2",
-          "type": "static"
+          "type": "subflow"
         },
         {
           "span": [15,20],
           "name": "t3",
-          "type": "static"
+          "type": "cudaflow"
         },
         {
           "span": [22,27],
           "name": "t4",
-          "type": "static"
+          "type": "condition"
         },
         {
           "span": [29,34],
           "name": "t5",
-          "type": "static"
+          "type": "module"
         },
         {
           "span": [36,40],
@@ -48,22 +48,22 @@ const simple = [
         {
           "span": [9,10],
           "name": "t8",
-          "type": "subflow"
+          "type": "cudaflow"
         },
         {
           "span": [15,16],
           "name": "t9",
-          "type": "subflow"
+          "type": "condition"
         },
         {
           "span": [19,20],
           "name": "t10",
-          "type": "subflow"
+          "type": "module"
         },
         {
           "span": [22,23],
           "name": "t11",
-          "type": "subflow"
+          "type": "static"
         },
         {
           "span": [26,27],
@@ -73,17 +73,17 @@ const simple = [
         {
           "span": [29,30],
           "name": "t13",
-          "type": "subflow"
+          "type": "cudaflow"
         },
         {
           "span": [33,34],
           "name": "t14",
-          "type": "subflow"
+          "type": "condition"
         },
         {
           "span": [36,37],
           "name": "t15",
-          "type": "subflow"
+          "type": "module"
         }
       ]
     },
@@ -98,17 +98,17 @@ const simple = [
         {
           "span": [9,13],
           "name": "t17",
-          "type": "condition"
+          "type": "module"
         },
         {
           "span": [15,20],
           "name": "t18",
-          "type": "condition"
+          "type": "static"
         },
         {
           "span": [22,27],
           "name": "t19",
-          "type": "condition"
+          "type": "cudaflow"
         },
         {
           "span": [29,30],
@@ -118,7 +118,7 @@ const simple = [
         {
           "span": [33,34],
           "name": "t22",
-          "type": "condition"
+          "type": "module"
         },
         {
           "span": [36,40],
@@ -143,7 +143,7 @@ const simple = [
         {
           "span": [9,10],
           "name": "t25",
-          "type": "cudaflow"
+          "type": "module"
         },
         {
           "span": [15,16],
@@ -158,17 +158,17 @@ const simple = [
         {
           "span": [25,26],
           "name": "t28",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [29,30],
           "name": "t29",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [33,34],
           "name": "t30",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [36,37],
@@ -188,17 +188,17 @@ const simple = [
         {
           "span": [9,10],
           "name": "t33",
-          "type": "module"
+          "type": "static"
         },
         {
           "span": [15,16],
           "name": "t34",
-          "type": "module"
+          "type": "condition"
         },
         {
           "span": [22,23],
           "name": "t35",
-          "type": "module"
+          "type": "static"
         },
         {
           "span": [26,27],
