@@ -79,7 +79,6 @@ const tfp = {
 
   // data field
   zoomXs: [],  // scoped time data
-  zoomYs: [],  // scoped line data
   data: null,
     
   timeFormat : function(d) {
@@ -392,7 +391,7 @@ class Database {
   numSegments() { return this.numSegments; }
 }
 
-function _adjust_dimensions() {
+function _adjustDim() {
 
   tfp.width = tfp.dom.style('width').slice(0, -2)
     - tfp.dom.style('padding-right').slice(0, -2)
@@ -574,6 +573,12 @@ function _render_tlSegs() {
         .attr('x', d => tfp.tlXScale(d.span[0]))
         .attr('y', d => tfp.segHOfst)
         .style('fill', d => tfp.zColorMap.get(d.type));
+    })
+    .on('click', d=>{
+      const zoomX = d.span;
+      //console.log("zoom to ", zoomX);
+      tfp.zoomXs.push(zoomX);
+      _onZoomX(zoomX, true);
     })
   );
 
@@ -862,6 +867,21 @@ function _render_rank() {
   _render_rankGraph();
 }
 
+function _onZoomX(zoomX, refreshBrush) {
+  queryData(zoomX, null);
+  _render_tlXAxis();
+  _render_tlSegs();
+  _render_loadXAxis();
+  _render_loadGraph();
+  _render_ovInfo();
+  _render_rankGraph();
+
+  if(refreshBrush) {
+    tfp.ovXSel = zoomX;
+    _render_ovBrush();
+  }
+}
+
 function queryData(zoomX, zoomY) {
 
   tfp.data = tfp.db.query(zoomX, zoomY);
@@ -927,43 +947,32 @@ async function main() {
     // Consume the brush action
     if (s) {
       const zoomX = s.map(tfp.tlXScale.invert);
-      const zoomY = tfp.zoomYs[tfp.zoomYs.length - 1];
       //console.log("zoom to ", zoomX);
       tfp.zoomXs.push(zoomX);
-      tfp.zoomYs.push(zoomY);
-      queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
-
-      _render_tlXAxis();
-      _render_tlSegs();
-      _render_loadXAxis();
-      _render_loadGraph();
-      _render_ovInfo();
-      _render_rankGraph();
+      _onZoomX(zoomX, false);
 
       tfp.tlG.select("g.tfp-tl-brush").call(tfp.tlBrush.move, null);
     }
-    else { // double-click detection
+    // double-click to the previous cache
+    else { 
       if (!tfp.tlBrushTimeout) {
         return (tfp.tlBrushTimeout = setTimeout(() => {
           tfp.tlBrushTimeout = null;
         }, 350));
       }
-      console.assert(tfp.zoomXs.length == tfp.zoomYs.length);
       
       if(tfp.zoomXs.length > 1) {
-        tfp.zoomXs.pop();
-        tfp.zoomYs.pop();
-        const zoomX = tfp.zoomXs[tfp.zoomXs.length-1];
-        const zoomY = tfp.zoomYs[tfp.zoomYs.length-1];
-        queryData(zoomX, zoomY);
-        tfp.ovXSel = zoomX;
-        _render_tlXAxis();
-        _render_tlSegs();
-        _render_loadXAxis();
-        _render_loadGraph();
-        _render_ovBrush();
-        _render_ovInfo();
-        _render_rankGraph();
+        let zoomX = tfp.zoomXs.pop();
+
+        while(tfp.zoomXs.length > 1) {
+          if(zoomX[0] == tfp.zoomXs[tfp.zoomXs.length-1][0] &&
+             zoomX[1] == tfp.zoomXs[tfp.zoomXs.length-1][1]) {
+            tfp.zoomXs.pop();
+          }
+          else break;
+        }
+
+        _onZoomX(tfp.zoomXs[tfp.zoomXs.length-1], true);
       }
     }
   });
@@ -973,17 +982,9 @@ async function main() {
     if(d3.event.sourceEvent && d3.event.selection) {
       if(d3.event.sourceEvent.type === "mouseup") {
         const zoomX = d3.event.selection.map(tfp.ovXScale.invert);
-        const zoomY = tfp.zoomYs[tfp.zoomYs.length - 1];
         //console.log("ovBrush fires zoomX", zoomX);
         tfp.zoomXs.push(zoomX);
-        tfp.zoomYs.push(zoomY);
-        queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
-        _render_tlXAxis();
-        _render_tlSegs();
-        _render_loadXAxis();
-        _render_loadGraph();
-        _render_ovInfo();
-        _render_rankGraph();
+        _onZoomX(zoomX, false);
       }
     }
   });
@@ -1041,12 +1042,11 @@ function feed(input) {
   let endParse = performance.now();
   
   tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
-  tfp.zoomYs = [null];
-  queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomYs[tfp.zoomYs.length-1]);
+  queryData(tfp.zoomXs[tfp.zoomXs.length-1], null);
 
   //console.log(tfp.data)
 
-  _adjust_dimensions();
+  _adjustDim();
   _render_tl();
   _render_load();
   _render_ov();
