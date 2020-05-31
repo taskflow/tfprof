@@ -535,7 +535,7 @@ function _render_tlZAxis() {
 
 function _render_tlSegs() {
 
-  var sd1 = tfp.tlG.select('g.tfp-tl-s-rect').selectAll('g').data(tfp.data)
+  var sd1 = tfp.tlG.select('g.tfp-tl-graph').selectAll('g').data(tfp.data)
   sd1.exit().remove();
   sd1 = sd1.merge(sd1.enter().append('g'));
 
@@ -911,7 +911,7 @@ async function main() {
   tfp.tlG.append('g').attr('class', 'tfp-tl-e-axis');
   tfp.tlG.append('g').attr('class', 'tfp-tl-e-rect');  // layer 1
   tfp.tlG.append('g').attr('class', 'tfp-tl-brush');   // layer 2
-  tfp.tlG.append('g').attr('class', 'tfp-tl-s-rect');  // layer 3
+  tfp.tlG.append('g').attr('class', 'tfp-tl-graph');  // layer 3
 
   tfp.ovG = tfp.svg.append('g').attr('class', 'tfp-ov-group');
   tfp.ovG.append('rect').attr('class', 'tfp-ov-bg');
@@ -963,7 +963,6 @@ async function main() {
       
       if(tfp.zoomXs.length > 1) {
         let zoomX = tfp.zoomXs.pop();
-
         while(tfp.zoomXs.length > 1) {
           if(zoomX[0] == tfp.zoomXs[tfp.zoomXs.length-1][0] &&
              zoomX[1] == tfp.zoomXs[tfp.zoomXs.length-1][1]) {
@@ -971,7 +970,6 @@ async function main() {
           }
           else break;
         }
-
         _onZoomX(tfp.zoomXs[tfp.zoomXs.length-1], true);
       }
     }
@@ -1022,7 +1020,12 @@ async function main() {
     .attr('class', 'tfp-tooltip')
     .direction('s')
     .offset([10, 0])
-    .html(d=> `Type: ${tfp.db.data[d[0]].segs[d[1]].type}<br>Name: ${tfp.db.data[d[0]].segs[d[1]].name}<br>Time: ${d[2]}`);
+    .html(d=> {
+      return `Worker: ${tfp.db.data[d[0]].worker}<br>
+              Type: ${tfp.db.data[d[0]].segs[d[1]].type}<br>
+              Name: ${tfp.db.data[d[0]].segs[d[1]].name}<br>
+              Time: ${d[2]}`
+    });
 
   tfp.svg.call(tfp.rankTooltip);
   
@@ -1035,12 +1038,9 @@ async function main() {
 
 function feed(input) {
 
-  let begParse = performance.now();
   tfp.db = new Database(input);
   tfp.ovXDomain = [tfp.db.minX, tfp.db.maxX];
   tfp.ovXSel = [tfp.db.minX, tfp.db.maxX];
-  let endParse = performance.now();
-  
   tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
   queryData(tfp.zoomXs[tfp.zoomXs.length-1], null);
 

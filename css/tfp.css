@@ -58,7 +58,6 @@
 }
 
 .tfp-tl-w-axis text {
-  cursor: pointer;
 }
 
 .tfp-tl-e-axis line, path {
@@ -82,7 +81,7 @@
   stroke-opacity: 0.2;
 }
 
-.tfp-tl-s-rect rect {
+.tfp-tl-graph rect {
   stroke: none;
   cursor: pointer;
 }
@@ -109,7 +108,6 @@
 
 .tfp-load-graph rect {
   stroke: none;
-  cursor: pointer;
 }
 
 .tfp-ov-brush .selection {
@@ -140,3 +138,8 @@
   font-family: sans-serif;
   dominant-baseline: hanging;
 }
+
+.tfp-rank-graph rect {
+  stroke: none;
+}
+
