@@ -506,7 +506,7 @@ function _render_tlZAxis() {
   tfp.tlZScale.domain(Array.from(tfp.zColorMap.keys()));
   tfp.tlZScale.range(Array.from(tfp.zColorMap.values()));
 
-  const zW = tfp.tlW + tfp.innerW + tfp.loadW;
+  const zW = tfp.width - tfp.leftMargin - tfp.rightMargin;
   const zH = tfp.segMaxH;
   const binW = zW / tfp.tlZScale.domain().length;
 
