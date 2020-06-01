@@ -1054,28 +1054,28 @@ function feed(input) {
 }
 
 function render_simple() {
-  feed(simple);
   $('#tfp_textarea').text(JSON.stringify(simple));
+  feed(simple);
 }
 
 function render_matmul() {
-  feed(matmul);
   $('#tfp_textarea').text(JSON.stringify(matmul));
+  feed(matmul);
 }
 
 function render_kmeans() {
-  feed(kmeans);
   $('#tfp_textarea').text(JSON.stringify(kmeans));
+  feed(kmeans);
 }
 
 function render_inference() {
-  feed(inference);
   $('#tfp_textarea').text(JSON.stringify(inference))
+  feed(inference);
 }
 
 function render_dreamplace() {
-  feed(dreamplace);
   $('#tfp_textarea').text(JSON.stringify(dreamplace))
+  feed(dreamplace);
 }
 
 $('#tfp_matmul').on('click', function() {
