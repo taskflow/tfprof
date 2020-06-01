@@ -1,14 +1,14 @@
 # TFProf
 
 TFProf provides the visualization and tooling needed for profiling 
-cpp-taskflow programs 
+Taskflow programs 
 
-# Profile Your Cpp-Taskflow Program
+# Profile Your Taskflow Program
 
-Generate tfprof data (.tfp) from your [cpp-taskflow][cpp-taskflow] program through the python script:
+Generate tfprof data (.tfp) from your [Taskflow][taskflow] program through the python script:
 
 ```bash
-~$ python3 tfprof.py -o output.tfp /path/to/my/cpp-taskflow/program arg1 arg2
+~$ python3 tfprof.py -o output.tfp /path/to/my/taskflow/program arg1 arg2
 ~$ cat output.tfp
 [ ... JSON data ]
 ```
@@ -16,7 +16,7 @@ Generate tfprof data (.tfp) from your [cpp-taskflow][cpp-taskflow] program throu
 Paste the content of `output.tfp` to the bottom JSON text area at the following page:
 
 <p align="center">
-   <a href="https://cpp-taskflow.github.io/tfprof/">
+   <a href="https://taskflow.github.io/tfprof/">
      <img width="100%" src="images/mainboard.png">
    </a>
 </p>
@@ -27,4 +27,4 @@ You may also open [index.html](index.html) from your browser to visualize tfprof
 
 ---
 
-[cpp-taskflow]:    https://github.com/cpp-taskflow/cpp-taskflow
+[taskflow]:    https://github.com/taskflow/taskflow
