@@ -1,9 +1,10 @@
 const simple = [
 {
-  "executor": "executor 0",
+  "executor": 3,
   "data": [
     {
-      "worker": "worker 1",
+      "worker": 1,
+      "level": 0,
       "data": [
         {
           "span": [2,7],
@@ -38,7 +39,8 @@ const simple = [
       ]
     },
     {
-      "worker": "worker 2",
+      "worker": 2,
+      "level": 0,
       "data":[
         {
           "span": [4,5],
@@ -88,7 +90,8 @@ const simple = [
       ]
     },
     {
-      "worker": "worker 3",
+      "worker": 3,
+      "level": 0,
       "data":[
         {
           "span": [4,5],
@@ -130,10 +133,11 @@ const simple = [
   ]
 },
 {
-  "executor": "executor 1",
+  "executor": 1,
   "data": [
     {
-      "worker": "worker 1",
+      "worker": 1,
+      "level": 0,
       "data": [
         {
           "span": [4,5],
@@ -178,7 +182,8 @@ const simple = [
       ]
     },
     {
-      "worker": "worker 2",
+      "worker": 2,
+      "level": 0,
       "data": [
         {
           "span": [4,5],

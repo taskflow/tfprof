@@ -106,31 +106,32 @@ class Database {
     this.maxSegments = maxSegments;
     this.indexMap = new Map();
 
-    let numSegments = 0, minX = null, maxX = null, k=0;
+    let numSegs = 0, minX = null, maxX = null, k=0;
 
     const begParse = performance.now();
 
-    // iterate executor
     for (let i=0, ilen=rawData.length; i<ilen; i++) {
-      // iterate worker
+      const E = rawData[i].executor;
       for (let j=0, jlen=rawData[i].data.length; j<jlen; j++) {
         
-        let klen = rawData[i].data[j].data.length;
+        let slen = rawData[i].data[j].data.length;
+        const W = rawData[i].data[j].worker;
+        const L = rawData[i].data[j].level;
 
         this.data.push({
-          executor: rawData[i].executor,
-          //worker  : rawData[i].data[j].worker,
-          worker  : `E${i}.w${j}`,
+          executor: `${E}`,
+          worker  : `E${E}.W${rawData[i].data[j].worker}.L${L}`,
+          level   : `${L}`,
           segs    : rawData[i].data[j].data,
-          range   : [0, klen]
+          range   : [0, slen]
         });
         
-        if(klen > 0) {
+        if(slen > 0) {
           let b = rawData[i].data[j].data[0].span[0];
-          let e = rawData[i].data[j].data[klen-1].span[1];
+          let e = rawData[i].data[j].data[slen-1].span[1];
           if(minX == null || b < minX) minX = b;
           if(maxX == null || e > maxX) maxX = e; 
-          numSegments += klen;
+          numSegs += slen;
         }
 
         this.indexMap.set(`${rawData[i].executor}+&+${rawData[i].data[j].worker}`, k);
@@ -138,7 +139,7 @@ class Database {
       }
     }
 
-    this.numSegments = numSegments;
+    this.numSegs = numSegs;
     this.minX = minX;
     this.maxX = maxX;
   }
@@ -388,7 +389,7 @@ class Database {
 
   maxX() { return this.maxX; }
 
-  numSegments() { return this.numSegments; }
+  numSegs() { return this.numSegs; }
 }
 
 function _adjustDim() {
@@ -442,7 +443,11 @@ function _render_tlWAxis() {
     .range([0, tfp.tlH]);
 
   tfp.tlWAxis.scale(tfp.tlWScale)
-    .tickSizeOuter(0);
+    .tickSizeOuter(0)
+    .tickFormat(d => {
+      const wl = d.split('.L');
+      return +wl[1] == 0 ? wl[0] : `↳L${wl[1]}`;
+    });
     //.tickFormat(d => d.split('+&+')[1]);
   
   tfp.tlG.select('g.tfp-tl-w-axis')
@@ -763,7 +768,7 @@ function _render_loadGraph() {
 function _render_load() {
 
   tfp.loadG.attr('transform', 
-    `translate(${tfp.leftMargin+tfp.tlW+tfp.innerW}, ${tfp.topMargin})`
+    `translate(${tfp.width-tfp.rightMargin-tfp.loadW}, ${tfp.topMargin})`
   );
 
   _render_loadXAxis();  

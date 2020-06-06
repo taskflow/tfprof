@@ -68,7 +68,7 @@ def main():
           logger.info(f"processing {ifile:s} ...")
           with open(ifile, "r") as ifs:
             data = json.load(ifs);
-            data['executor'] = "executor " + str(executor_id);
+            data['executor'] = executor_id;
             executor_id = executor_id + 1;
             if fnum != 0 :
               ofs.write(',');
