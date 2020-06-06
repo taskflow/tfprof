@@ -1063,14 +1063,9 @@ function render_simple() {
   feed(simple);
 }
 
-function render_matmul() {
-  $('#tfp_textarea').text(JSON.stringify(matmul));
-  feed(matmul);
-}
-
-function render_kmeans() {
-  $('#tfp_textarea').text(JSON.stringify(kmeans));
-  feed(kmeans);
+function render_composition() {
+  $('#tfp_textarea').text(JSON.stringify(composition));
+  feed(composition);
 }
 
 function render_inference() {
@@ -1083,12 +1078,8 @@ function render_dreamplace() {
   feed(dreamplace);
 }
 
-$('#tfp_matmul').on('click', function() {
-  render_matmul();
-})
-
-$('#tfp_kmeans').on('click', function() {
-  render_kmeans();
+$('#tfp_composition').on('click', function() {
+  render_composition();
 })
 
 $('#tfp_inference').on('click', function() {
