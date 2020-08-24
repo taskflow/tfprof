@@ -1063,32 +1063,32 @@ function render_simple() {
   feed(simple);
 }
 
-function render_composition() {
-  $('#tfp_textarea').text(JSON.stringify(composition));
-  feed(composition);
-}
-
-function render_inference() {
-  $('#tfp_textarea').text(JSON.stringify(inference))
-  feed(inference);
-}
-
-function render_dreamplace() {
-  $('#tfp_textarea').text(JSON.stringify(dreamplace))
-  feed(dreamplace);
-}
-
-$('#tfp_composition').on('click', function() {
-  render_composition();
-})
-
-$('#tfp_inference').on('click', function() {
-  render_inference();
-})
-
-$('#tfp_dreamplace').on('click', function() {
-  render_dreamplace();
-})
+//function render_composition() {
+//  $('#tfp_textarea').text(JSON.stringify(composition));
+//  feed(composition);
+//}
+//
+//function render_inference() {
+//  $('#tfp_textarea').text(JSON.stringify(inference))
+//  feed(inference);
+//}
+//
+//function render_dreamplace() {
+//  $('#tfp_textarea').text(JSON.stringify(dreamplace))
+//  feed(dreamplace);
+//}
+//
+//$('#tfp_composition').on('click', function() {
+//  render_composition();
+//})
+//
+//$('#tfp_inference').on('click', function() {
+//  render_inference();
+//})
+//
+//$('#tfp_dreamplace').on('click', function() {
+//  render_dreamplace();
+//})
 
 // textarea changer event
 $('#tfp_textarea').on('input propertychange paste', function() {
