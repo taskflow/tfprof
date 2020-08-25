@@ -1068,7 +1068,7 @@ function _adjust_menu() {
 
   menu.append('label').attr('for', d=>d.worker).text(d => {
     const wl = d.worker.split('.');
-    return `${d.worker} (Executor ${wl[0][1]} / Worker ${wl[1][1]} / Level ${wl[2][1]})`
+    return `${d.worker} (Executor ${wl[0]} / Worker ${wl[1]} @ Level ${wl[2]})`
   });
 }
 
@@ -1114,6 +1114,10 @@ function render_dreamplace() {
   feed(dreamplace);
 }
 
+main();
+
+// ---- jquery ----
+
 $('#tfp_composition').on('click', function() {
   render_composition();
 })
@@ -1157,7 +1161,7 @@ $('#tfp_textarea').on('input propertychange paste', function() {
 });
 
 
-$( '#tfp_menu_workers' ).on( 'click', function( event ) {
+$('#tfp_menu_workers').on('click', function( event ) {
 
   //console.log("dropdown")
 
@@ -1186,7 +1190,12 @@ $( '#tfp_menu_workers' ).on( 'click', function( event ) {
   event.stopPropagation();  // keep dropdown alive
 });
 
-main();
+$('#tfp_menu_reset_zoom').on('click', function( event ) {
+  tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
+  _onZoomX(tfp.zoomXs[tfp.zoomXs.length-1], true);
+})
+
+
 
 
 
