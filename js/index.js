@@ -860,7 +860,7 @@ function _render_rankGraph() {
 
   // xlabel
   tfp.rankG.select('text.tfp-rank-label')
-    .html(`Top ${limit[0]+1}-${limit[1]} Critical Tasks`);
+    .html(`Top ${limit[0]+1}-${limit[0]+rank.length} Critical Tasks`);
 }
 
 function _render_rank() {
@@ -1077,8 +1077,8 @@ function _adjust_menu() {
   });
   
   // rank menu
-  document.getElementById('tfp_menu_rank_from').value = '';
-  document.getElementById('tfp_menu_rank_to').value = '';
+  document.getElementById('tfp_menu_rank_from').value = 1;
+  document.getElementById('tfp_menu_rank_to').value = 50;
 }
 
 function feed(input) {
