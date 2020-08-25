@@ -1038,7 +1038,7 @@ async function main() {
   //const res = await fetchTFPData(simple_file);
   //let endFetch = performance.now();
 
-  render_composition();
+  render_simple();
 }
 
 function _adjust_menu() {
