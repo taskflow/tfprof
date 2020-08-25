@@ -65,7 +65,7 @@ const tfp = {
     ['static', '#4682b4'],
     ['subflow', '#ff7f0e'],
     ['cudaflow', '#6A0DAD'],
-    ['condition', '#41A317'],
+    ['condition', '#32CD99'],
     ['module', '#0000FF'],
     ['clustered', '#999DA0']
   ]),
