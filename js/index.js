@@ -11,7 +11,7 @@ const tfp = {
   height: null,
   topMargin: 30,
   bottomMargin: 40,
-  leftMargin: 80,
+  leftMargin: 100,
   rightMargin: 40,
   innerH: 30,
   innerW: 20,
@@ -78,7 +78,8 @@ const tfp = {
   transDuration: 700,
 
   // data field
-  zoomXs: [],  // scoped time data
+  zoomXs: [],    // scoped time data
+  zoomY : null,  // scoped worker
   data: null,
     
   timeFormat : function(d) {
@@ -134,7 +135,7 @@ class Database {
           numSegs += slen;
         }
 
-        this.indexMap.set(`${rawData[i].executor}+&+${rawData[i].data[j].worker}`, k);
+        this.indexMap.set(`${this.data[this.data.length-1].worker}`, k);
         k = k+1;
       }
     }
@@ -156,8 +157,10 @@ class Database {
       zoomY = d3.range(0, this.data.length);
     }
     else {
-      zoomY = zoomY.map(d => this.indexMap.get(`${d.executor}+&+${d.worker}`));
+      zoomY = zoomY.map(d => this.indexMap.get(d));
     }
+
+    //console.log(zoomY)
 
     console.assert(zoomX[0] <= zoomX[1]);
 
@@ -170,8 +173,6 @@ class Database {
 
       const w = zoomY[y];
 
-      //console.log("bsearch worker", this.data[w].worker);
-      
       const slen = this.data[w].segs.length;
             
       let l = null, r = null, beg, end, mid;
@@ -207,16 +208,12 @@ class Database {
         }
       };
 
-      if(l == null) {
+      if(l == null || l > r) {
         this.data[w].range = [0, 0];
         continue;
       }
 
       // range ok
-      if(l > r) {
-        this.data[w].range = [0, 0];
-        continue;
-      }
       this.data[w].range = [l, r+1];
       R += (r+1-l);
       //console.log(`  ${this.data[w].worker} has ${r+1-l} segs`);
@@ -437,6 +434,7 @@ function _render_tlXAxis() {
 
 function _render_tlWAxis() {
 
+
   tfp.tlWScale
     //.domain(tfp.data.map(d=>`${d.executor}+&+${d.worker}`))
     .domain(tfp.data.map(d=>d.worker))
@@ -444,11 +442,11 @@ function _render_tlWAxis() {
 
   tfp.tlWAxis.scale(tfp.tlWScale)
     .tickSizeOuter(0)
-    .tickFormat(d => {
-      const wl = d.split('.L');
-      return +wl[1] == 0 ? wl[0] : `↳L${wl[1]}`;
-    });
-    //.tickFormat(d => d.split('+&+')[1]);
+    //.tickFormat(d => {
+    //  const wl = d.split('.L');
+    //  return +wl[1] == 0 ? wl[0] : `↳L${wl[1]}`;
+    //});
+    .tickFormat(d => d);
   
   tfp.tlG.select('g.tfp-tl-w-axis')
     //.attr('transform', `translate(${tfp.tlW}, 0)`)
@@ -611,6 +609,7 @@ function _render_tl() {
   _render_tlZAxis();  // z-axis
   _render_tlSegs();   // s-rect
   _render_tlBrush();  // brush
+  
 }
 
 function _render_ovXAxis() {
@@ -782,10 +781,10 @@ function _render_rankGraph(limit=50) {
   let rank = [];
   for(let w=0; w<tfp.data.length; w++) {
     for(let s=0; s<tfp.data[w].segs.length; s++) {
-      //rank.push([w, s, tfp.data[w].segs[s].span[1] - tfp.data[w].segs[s].span[0]]);
-      for(let c=tfp.data[w].segs[s].cluster[0]; c<=tfp.data[w].segs[s].cluster[1]; c++) {
-        rank.push([w, c, tfp.db.data[w].segs[c].span[1] - tfp.db.data[w].segs[c].span[0]]);
-      }
+      rank.push([w, s, tfp.data[w].segs[s].span[1] - tfp.data[w].segs[s].span[0]]);
+      //for(let c=tfp.data[w].segs[s].cluster[0]; c<=tfp.data[w].segs[s].cluster[1]; c++) {
+      //  rank.push([w, c, tfp.db.data[w].segs[c].span[1] - tfp.db.data[w].segs[c].span[0]]);
+      //}
     }
   }
 
@@ -834,7 +833,7 @@ function _render_rankGraph(limit=50) {
         .attr('y', d=>tfp.rankYScale(d[2]))
         .attr('width', tfp.rankXScale.bandwidth())
         .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
-        .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
+        .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
     })
     .on("mouseout", function(d) {
       d3.select(this).transition().duration(250).style('fill-opacity', .8)
@@ -842,7 +841,7 @@ function _render_rankGraph(limit=50) {
         .attr('y', d=>tfp.rankYScale(d[2]))
         .attr('width', tfp.rankXScale.bandwidth())
         .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
-        .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
+        .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
     });
 
   bars = bars.merge(newBars);
@@ -853,7 +852,7 @@ function _render_rankGraph(limit=50) {
     .attr('width', tfp.rankXScale.bandwidth())
     .attr('height', d=>tfp.rankH-tfp.rankYScale(d[2]))
     .style('fill-opacity', .8)
-    .style('fill', d => tfp.zColorMap.get(tfp.db.data[d[0]].segs[d[1]].type));
+    .style('fill', d => tfp.zColorMap.get(tfp.data[d[0]].segs[d[1]].type));
 
   // xlabel
   tfp.rankG.select('text.tfp-rank-label')
@@ -873,7 +872,8 @@ function _render_rank() {
 }
 
 function _onZoomX(zoomX, refreshBrush) {
-  queryData(zoomX, null);
+
+  queryData(zoomX, tfp.zoomY);
   _render_tlXAxis();
   _render_tlSegs();
   _render_loadXAxis();
@@ -892,10 +892,10 @@ function queryData(zoomX, zoomY) {
   tfp.data = tfp.db.query(zoomX, zoomY);
 
   let eMeta = tfp.data.reduce((res, item) => {
-   res[item.executor] = [...res[item.executor] || [], item.worker];
-   return res;
+    res[item.executor] = [...res[item.executor] || [], item.worker];
+    return res;
   }, {});
-  
+
   tfp.eMeta = Object.keys(eMeta).map(e => { return {executor: e, workers: eMeta[e]} });
 }
 
@@ -1026,9 +1026,9 @@ async function main() {
     .direction('s')
     .offset([10, 0])
     .html(d=> {
-      return `Worker: ${tfp.db.data[d[0]].worker}<br>
-              Type: ${tfp.db.data[d[0]].segs[d[1]].type}<br>
-              Name: ${tfp.db.data[d[0]].segs[d[1]].name}<br>
+      return `Worker: ${tfp.data[d[0]].worker}<br>
+              Type: ${tfp.data[d[0]].segs[d[1]].type}<br>
+              Name: ${tfp.data[d[0]].segs[d[1]].name}<br>
               Time: ${d[2]}`
     });
 
@@ -1038,7 +1038,38 @@ async function main() {
   //const res = await fetchTFPData(simple_file);
   //let endFetch = performance.now();
 
-  render_simple();
+  render_composition();
+}
+
+function _adjust_menu() {
+
+  var menu = d3.select('#tfp_menu_workers').selectAll('a').data(tfp.db.data);
+
+  menu.selectAll('input').remove();
+  menu.selectAll('label').remove();
+
+  menu.exit().remove();
+  
+  menu = menu.merge(menu.enter().append('a')
+    .attr('class', 'dropdown-item')
+    //.attr('data-value', d => d.worker)
+    //.attr('tabIndex', '-1')
+    //.on('mouseover', tfp.executorTooltip.show)
+    //.on('mouseout', tfp.executorTooltip.hide);
+  );
+  
+  menu.append('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'mr-2')
+    .attr('value', d=>d.worker)
+    .attr('id', d=>d.worker)
+    .property('checked', true)
+    .attr('name', 'worker');
+
+  menu.append('label').attr('for', d=>d.worker).text(d => {
+    const wl = d.worker.split('.');
+    return `${d.worker} (Executor ${wl[0][1]} / Worker ${wl[1][1]} / Level ${wl[2][1]})`
+  });
 }
 
 function feed(input) {
@@ -1047,7 +1078,9 @@ function feed(input) {
   tfp.ovXDomain = [tfp.db.minX, tfp.db.maxX];
   tfp.ovXSel = [tfp.db.minX, tfp.db.maxX];
   tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
-  queryData(tfp.zoomXs[tfp.zoomXs.length-1], null);
+  tfp.zoomY  = Array.from(tfp.db.indexMap.keys())
+
+  queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomY);
 
   //console.log(tfp.data)
 
@@ -1056,6 +1089,9 @@ function feed(input) {
   _render_load();
   _render_ov();
   _render_rank();
+  
+  // database wide
+  _adjust_menu();
 }
 
 function render_simple() {
@@ -1063,32 +1099,32 @@ function render_simple() {
   feed(simple);
 }
 
-//function render_composition() {
-//  $('#tfp_textarea').text(JSON.stringify(composition));
-//  feed(composition);
-//}
-//
-//function render_inference() {
-//  $('#tfp_textarea').text(JSON.stringify(inference))
-//  feed(inference);
-//}
-//
-//function render_dreamplace() {
-//  $('#tfp_textarea').text(JSON.stringify(dreamplace))
-//  feed(dreamplace);
-//}
-//
-//$('#tfp_composition').on('click', function() {
-//  render_composition();
-//})
-//
-//$('#tfp_inference').on('click', function() {
-//  render_inference();
-//})
-//
-//$('#tfp_dreamplace').on('click', function() {
-//  render_dreamplace();
-//})
+function render_composition() {
+  $('#tfp_textarea').text(JSON.stringify(composition));
+  feed(composition);
+}
+
+function render_inference() {
+  $('#tfp_textarea').text(JSON.stringify(inference))
+  feed(inference);
+}
+
+function render_dreamplace() {
+  $('#tfp_textarea').text(JSON.stringify(dreamplace))
+  feed(dreamplace);
+}
+
+$('#tfp_composition').on('click', function() {
+  render_composition();
+})
+
+$('#tfp_inference').on('click', function() {
+  render_inference();
+})
+
+$('#tfp_dreamplace').on('click', function() {
+  render_dreamplace();
+})
 
 // textarea changer event
 $('#tfp_textarea').on('input propertychange paste', function() {
@@ -1121,6 +1157,37 @@ $('#tfp_textarea').on('input propertychange paste', function() {
 });
 
 
+$( '#tfp_menu_workers' ).on( 'click', function( event ) {
+
+  //console.log("dropdown")
+
+  var zoomY = [];
+  $.each($("input[name='worker']:checked"), function(){
+    zoomY.push($(this).val());
+  });
+
+  //console.log(zoomY.join(', '))
+  
+  //tfp.ovXDomain = [tfp.db.minX, tfp.db.maxX];
+  tfp.ovXSel = tfp.zoomXs[tfp.zoomXs.length-1];
+  //tfp.zoomXs = [[tfp.db.minX, tfp.db.maxX]];  // clear cached data
+  tfp.zoomY  = zoomY;
+
+  queryData(tfp.zoomXs[tfp.zoomXs.length-1], tfp.zoomY);
+
+  //console.log(tfp.data)
+
+  _adjustDim();
+  _render_tl();
+  _render_load();
+  _render_ov();
+  _render_rank();
+
+  event.stopPropagation();  // keep dropdown alive
+});
+
 main();
+
+
 
 

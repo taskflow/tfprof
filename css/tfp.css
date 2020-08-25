@@ -142,3 +142,10 @@
   stroke: none;
 }
 
+.tfp-menu-workers label, input {
+  cursor: pointer;
+}
+
+.tfp-menu-rank a, label, input {
+  cursor: pointer;
+}

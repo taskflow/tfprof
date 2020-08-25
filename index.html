@@ -10,15 +10,10 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
 
     <link rel="icon" href="favicon/favicon.ico" type="image/x-icon">
-
+    
     <link rel="stylesheet" href="css/bootstrap/4.4.1/bootstrap.min.css">
     <script type="text/javascript" src="js/jquery/3.4.1/jquery.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap/4.4.1/bootstrap.min.js"></script>
-
-    <!-- multiselect 
-    <script type="text/javascript" src="js/bootstrap-multiselect/bootstrap-multiselect.min.js"></script>
-    <link rel="stylesheet" href="css/bootstrap-multiselect/bootstrap-multiselect.min.css" type="text/css"/>
-    -->
+    <script type="text/javascript" src="js/bootstrap/4.4.1/bootstrap.bundle.min.js"></script>
 
     <!-- d3 -->
     <script type="text/javascript" src="js/d3/d3.v5.min.js"></script>
@@ -31,12 +26,12 @@
 <!-- BEG BODY -->
   <body>
     
-    <nav class="navbar navbar-expand-sm mb-4 navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-sm mb-3 navbar-dark bg-dark">
       <!-- Brand -->
       <a class="navbar-brand" href=""><img src="images/logo.png" alt="Logo" style="width:40px;"> Taskflow Profiler</a>
       <!-- left-side navbar -->
       <ul class="navbar-nav mr-auto">
-        <!--<li class="nav-item"><a class="nav-link" href="">MainBoard</a></li>
+        <!--<li class="nav-item"><a class="nav-link" href="">MainBoard</a></li>-->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
             Examples
@@ -46,7 +41,7 @@
             <a class="dropdown-item" id="tfp_inference" href="#">Machine Learning Inference</a>
             <a class="dropdown-item" id="tfp_dreamplace" href="#">Integrated Circuit Placement</a>
           </div>
-        </li>-->
+        </li>
       </ul>
       <!-- right-side navbar --> 
       <form class="form-inline my-2 my-lg-0" action="https://github.com/taskflow/tfprof">
@@ -54,8 +49,34 @@
       </form>
     </nav>
 
-    <div class="container-fluidic" id="tfp"></div>
+    <div class="mb-2 btn-toolbar" role="toolbar" style="margin-left: 100px">
 
+      <!-- tfp-menu-workers -->
+      <div class="btn-group mr-2" role="group">
+        <button type="button" class="btn btn-outline-info dropdown-toggle" data-toggle="dropdown">Workers</button>
+        <div class="dropdown-menu tfp-menu-workers" id="tfp_menu_workers"></div>
+      </div>
+
+      <!-- tfp-menu-rank
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">Rank</button>
+        <div class="dropdown-menu tfp-menu-rank" id="tfp_menu_rank">
+          <a class="dropdown-item">top 1-10</a>
+          <a class="dropdown-item">top 1-20</a>
+          <a class="dropdown-item">top 1-30</a>
+          <a class="dropdown-item">top 1-40</a>
+          <a class="dropdown-item">top 1-50</a>
+          <a class="dropdown-item">top 1-60</a>
+          <a class="dropdown-item">top 1-70</a>
+          <a class="dropdown-item">top 1-80</a>
+          <a class="dropdown-item">top 1-90</a>
+          <a class="dropdown-item">top 1-100</a>
+        </div>
+      </div>-->
+    </div>
+      
+    <!-- svg -->
+    <div class="container-fluidic" id="tfp"></div>
 
     <div class="form-group mr-4 ml-4 mt-2">
       <textarea class="form-control" id="tfp_textarea" placeholder="Paste .tfp data" rows="8"></textarea>
@@ -64,9 +85,9 @@
     </div>
 
     <script src="js/simple.js"></script>
-    <!--<script src="js/composition.js"></script>
+    <script src="js/composition.js"></script>
     <script src="js/inference.js"></script>
-    <script src="js/dreamplace.js"></script>-->
+    <script src="js/dreamplace.js"></script>
     <script src="js/index.js"></script>
  
     <footer class="page-footer font-small blue">
