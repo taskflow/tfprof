@@ -148,20 +148,6 @@ class Database {
 
   query(zoomX = null, zoomY = null) {
 
-    //fetch(`/query`, {
-    //  method: 'post', 
-    //  body: `{zoomX: "${zoomX}", zoomY: "${zoomY}"}`
-    //}).then(function(response) {
-    //  console.log(response);
-    //  return response.json();
-    //}).then(function(data) {
-    //  console.log(data);
-    //});
-    //response.text().then(function(text) {
-    //    console.log(text);
-    //  });
-    //});
-
     // default selection is the entire region
     if(zoomX == null) {
       zoomX = [this.minX, this.maxX];
