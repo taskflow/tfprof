@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # program: tfprof
 
 import logging as logger
@@ -9,6 +11,57 @@ import os
 import tempfile
 import subprocess
 
+# run_tfprof (default)
+# generate profiler data in taskflow profiler format
+def run_tfprof(program, output):
+  
+  tfpb = time.perf_counter(); 
+  
+  logger.info("profiling program \"" + ' '.join(program) +'\"')
+  
+  with open(output, "w") as ofs:
+  
+    ofs.write('[');
+  
+    with tempfile.TemporaryDirectory() as dirname:
+    
+      prefix = os.path.join(dirname, 'executor-')
+    
+      os.environ["TF_ENABLE_PROFILER"] = prefix;
+      
+      prob = time.perf_counter();
+      subprocess.call(program);
+      proe = time.perf_counter();
+      logger.info(f"program finished in {(proe - prob)*1000:0.2f} milliseconds")
+  
+      executor_id = 0;
+      logger.info("collecting profiled data ...")
+      for fnum, fname in enumerate(os.listdir(dirname)):
+        if fname.endswith(".tfp") : 
+          ifile = os.path.join(dirname, fname);
+          logger.info(f"processing {ifile:s} ...")
+          with open(ifile, "r") as ifs:
+            data = json.load(ifs);
+            data['executor'] = executor_id;
+            executor_id = executor_id + 1;
+            if fnum != 0 :
+              ofs.write(',');
+            #ofs.write(ifs.read());
+            json.dump(data, ofs)
+  
+    ofs.write("]\n");
+  
+  logger.info(f"saved result to {output:s}");
+  
+  tfpe = time.perf_counter(); 
+      
+  logger.info(f"tfprof finished in {(tfpe - tfpb)*1000:0.2f} milliseconds")
+
+
+# run_chrome (TODO)
+# generate the profiler data in chrome tracing format
+
+# main function
 def main():
 
   # configure logger
@@ -41,47 +94,8 @@ def main():
     logger.error("no program specified");
     sys.exit(1);
   
-  tfpb = time.perf_counter(); 
-  
-  logger.info("profiling program \"" + ' '.join(args.program) +'\"')
-  
-  with open(args.output, "w") as ofs:
-  
-    ofs.write('[');
-  
-    with tempfile.TemporaryDirectory() as dirname:
-    
-      prefix = os.path.join(dirname, 'executor-')
-    
-      os.environ["TF_ENABLE_PROFILER"] = prefix;
-      
-      prob = time.perf_counter();
-      subprocess.call(args.program);
-      proe = time.perf_counter();
-      logger.info(f"program finished in {(proe - prob)*1000:0.2f} milliseconds")
-  
-      executor_id = 0;
-      logger.info("collecting profiled data ...")
-      for fnum, fname in enumerate(os.listdir(dirname)):
-        if fname.endswith(".tfp") : 
-          ifile = os.path.join(dirname, fname);
-          logger.info(f"processing {ifile:s} ...")
-          with open(ifile, "r") as ifs:
-            data = json.load(ifs);
-            data['executor'] = executor_id;
-            executor_id = executor_id + 1;
-            if fnum != 0 :
-              ofs.write(',');
-            #ofs.write(ifs.read());
-            json.dump(data, ofs)
-  
-    ofs.write("]\n");
-  
-  logger.info(f"saved result to {args.output:s}");
-  
-  tfpe = time.perf_counter(); 
-      
-  logger.info(f"tfprof finished in {(tfpe - tfpb)*1000:0.2f} milliseconds")
+  run_tfprof(args.program, args.output);
+
 
 # main entry
 if __name__ == "__main__":

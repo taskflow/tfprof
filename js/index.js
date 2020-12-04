@@ -67,6 +67,7 @@ const tfp = {
     ['cudaflow', '#6A0DAD'],
     ['condition', '#32CD99'],
     ['module', '#0000FF'],
+    ['async', '#292b2c'],
     ['clustered', '#999DA0']
   ]),
   zScale: null,
@@ -146,6 +147,20 @@ class Database {
   }
 
   query(zoomX = null, zoomY = null) {
+
+    //fetch(`/query`, {
+    //  method: 'post', 
+    //  body: `{zoomX: "${zoomX}", zoomY: "${zoomY}"}`
+    //}).then(function(response) {
+    //  console.log(response);
+    //  return response.json();
+    //}).then(function(data) {
+    //  console.log(data);
+    //});
+    //response.text().then(function(text) {
+    //    console.log(text);
+    //  });
+    //});
 
     // default selection is the entire region
     if(zoomX == null) {
@@ -249,7 +264,7 @@ class Database {
 
     for(let y=0; y<zoomY.length; ++y){
       
-      let T=0, st=0, dt=0, gt=0, ct=0, mt=0;
+      let T=0, st=0, dt=0, gt=0, ct=0, mt=0, at=0;
 
       const w = zoomY[y];
       const N = this.data[w].range[1]-this.data[w].range[0];
@@ -286,6 +301,7 @@ class Database {
             case "cudaflow" : gt += t; break;
             case "condition": ct += t; break;
             case "module"   : mt += t; break;
+            case "async"    : at += t; break;
             default         : console.assert(false); break;
           }
         }
@@ -295,11 +311,18 @@ class Database {
 
       let load = [], x=0;
 
-      load.push({type: "static",    span: [x, x+st], ratio: (st/T*100).toFixed(2)}); x += st;
-      load.push({type: "subflow",   span: [x, x+dt], ratio: (dt/T*100).toFixed(2)}); x += dt;
-      load.push({type: "cudaflow",  span: [x, x+gt], ratio: (gt/T*100).toFixed(2)}); x += gt;
-      load.push({type: "condition", span: [x, x+ct], ratio: (ct/T*100).toFixed(2)}); x += ct;
-      load.push({type: "module",    span: [x, x+mt], ratio: (mt/T*100).toFixed(2)}); x += mt;
+      load.push({type: "static",    span: [x, x+st], ratio: (st/T*100).toFixed(2)}); 
+      x += st;
+      load.push({type: "subflow",   span: [x, x+dt], ratio: (dt/T*100).toFixed(2)}); 
+      x += dt;
+      load.push({type: "cudaflow",  span: [x, x+gt], ratio: (gt/T*100).toFixed(2)}); 
+      x += gt;
+      load.push({type: "condition", span: [x, x+ct], ratio: (ct/T*100).toFixed(2)}); 
+      x += ct;
+      load.push({type: "module",    span: [x, x+mt], ratio: (mt/T*100).toFixed(2)}); 
+      x += mt;
+      load.push({type: "async",     span: [x, x+at], ratio: (at/T*100).toFixed(2)}); 
+      x += at;
       
       S.push({
         executor: this.data[w].executor,
