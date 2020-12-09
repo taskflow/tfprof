@@ -5,15 +5,18 @@ Taskflow programs
 
 # Profile Your Taskflow Program
 
-Generate tfprof data (.tfp) from your [Taskflow][taskflow] program through the python script:
+All taskflow programs come with a lightweight profiling module 
+to observe worker activities in every executor.
+To enable the profiler, set the environment variable `TF_ENABLE_PROFILER` 
+to a file name in which the profiling result will be stored.
 
 ```bash
-~$ python3 tfprof.py -o output.tfp /path/to/my/taskflow/program arg1 arg2
-~$ cat output.tfp
+~$ TF_ENABLE_PROFILER=result.json ./path/to/my/taskflow/program arg1 arg2
+~$ cat result.json
 [ ... JSON data ]
 ```
 
-Paste the content of `output.tfp` to the bottom JSON text area at the following page:
+Paste the content of `result.json` to the bottom JSON text area at the following page:
 
 <p align="center">
    <a href="https://taskflow.github.io/tfprof/">
@@ -23,7 +26,9 @@ Paste the content of `output.tfp` to the bottom JSON text area at the following 
 
 You may also open [index.html](index.html) from your browser to visualize tfprof data.
 
+# Learn More about TFProf
 
+Please visit the page [Profile Taskflow Programs](https://taskflow.github.io/taskflow/Profiler.html).
 
 ---
 
