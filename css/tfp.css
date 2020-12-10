@@ -1,4 +1,9 @@
 
+.dropdown-menu {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .tfp-tl-brush .selection {
   stroke: blue;
   stroke-opacity: 0.6;
