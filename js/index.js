@@ -834,7 +834,7 @@ function _onZoomX(zoomX, refreshBrush) {
 
 function queryData(zoomX, zoomY) {
 
-  console.log(zoomX, zoomY);
+  //console.log(zoomX, zoomY);
 
   tfp.data = tfp.db.query(zoomX, zoomY);
 
