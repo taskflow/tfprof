@@ -64,7 +64,6 @@ const tfp = {
   zColorMap: new Map([
     ['static', '#4682b4'],
     ['subflow', '#ff7f0e'],
-    ['cudaflow', '#6A0DAD'],
     ['condition', '#32CD99'],
     ['module', '#0000FF'],
     ['async', '#292b2c'],
@@ -284,7 +283,6 @@ class Database {
           switch(this.data[w].segs[i].type) {
             case "static"   : st += t; break;
             case "subflow"  : dt += t; break;
-            case "cudaflow" : gt += t; break;
             case "condition": ct += t; break;
             case "module"   : mt += t; break;
             case "async"    : at += t; break;
@@ -301,8 +299,6 @@ class Database {
       x += st;
       load.push({type: "subflow",   span: [x, x+dt], ratio: (dt/T*100).toFixed(2)}); 
       x += dt;
-      load.push({type: "cudaflow",  span: [x, x+gt], ratio: (gt/T*100).toFixed(2)}); 
-      x += gt;
       load.push({type: "condition", span: [x, x+ct], ratio: (ct/T*100).toFixed(2)}); 
       x += ct;
       load.push({type: "module",    span: [x, x+mt], ratio: (mt/T*100).toFixed(2)}); 

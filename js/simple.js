@@ -19,7 +19,7 @@ const simple = [
         {
           "span": [15,20],
           "name": "t3",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [22,27],
@@ -50,7 +50,7 @@ const simple = [
         {
           "span": [9,10],
           "name": "t8",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [15,16],
@@ -75,7 +75,7 @@ const simple = [
         {
           "span": [29,30],
           "name": "t13",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [33,34],
@@ -111,7 +111,7 @@ const simple = [
         {
           "span": [22,27],
           "name": "t19",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [29,30],
@@ -142,7 +142,7 @@ const simple = [
         {
           "span": [4,5],
           "name": "t24",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [9,10],
@@ -152,12 +152,12 @@ const simple = [
         {
           "span": [15,16],
           "name": "t26",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [22,23],
           "name": "t27",
-          "type": "cudaflow"
+          "type": "static"
         },
         {
           "span": [25,26],
@@ -177,7 +177,7 @@ const simple = [
         {
           "span": [36,37],
           "name": "t31",
-          "type": "cudaflow"
+          "type": "static"
         }
       ]
     },
