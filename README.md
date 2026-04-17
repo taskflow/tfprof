@@ -9,11 +9,12 @@ All taskflow programs come with a lightweight profiling module
 to observe worker activities in every executor.
 To enable the profiler, set the environment variable `TF_ENABLE_PROFILER` 
 to a file name in which the profiling result will be stored.
+Then, drag the output file to [https://taskflow.github.io/tfprof/](https://taskflow.github.io/tfprof/).
+
 
 ```bash
 ~$ TF_ENABLE_PROFILER=result.tfp ./path/to/my/taskflow/program arg1 arg2
-~$ drag the result.tfp file to https://taskflow.github.io/tfprof/
-[ ... JSON data ]
+# drag the result.tfp file to https://taskflow.github.io/tfprof/
 ```
 
 You may also open [index.html](index.html) from your browser to visualize tfprof data.
