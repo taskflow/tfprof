@@ -25,7 +25,7 @@ body { background:var(--bg); color:var(--text); }
 
 /* toolbar */
 #toolbar { display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--surface); border-bottom:1px solid var(--border); }
-#toolbar h1 { font-size:20px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; }
+#toolbar h1 { font-size:20px; font-weight:700; color:var(--accent); }
 .sep { width:1px; height:22px; background:var(--border); }
 .btn { padding:5px 14px; font-size:16px; font-family:inherit; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--muted); cursor:pointer; }
 .btn:hover { color:var(--text); border-color:var(--accent); }
@@ -52,7 +52,7 @@ body { background:var(--bg); color:var(--text); }
 .lsw { width:11px; height:11px; border-radius:2px; display:inline-block; margin-right:4px; vertical-align:middle; }
 #stats { display:flex; gap:28px; padding:6px 16px; font-size:16px; color:var(--muted); border-bottom:1px solid var(--border); }
 #stats b { color:var(--text); }
-.slabel { font-size:14px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:10px 16px 4px; }
+.slabel { font-size:14px; color:var(--muted); padding:10px 16px 4px; }
 
 /*
   TIMELINE SECTION
@@ -61,62 +61,28 @@ body { background:var(--bg); color:var(--text); }
   Inside it, everything is position:absolute:
 
     #tl-labels   left=0           top=0   width=LABEL_W  height=totalRowsH
-    #tl-canvas   left=LABEL_W px  top=0                  height=totalRowsH
+    #tl-svg      left=LABEL_W px  top=0                  height=visibleRowsH
     #tl-xsvg     left=LABEL_W px  top=totalRowsH         height=XAXIS_H
     #tl-bsvg     left=LABEL_W px  top=0   (brush, receives clicks)
 
   The page scrolls #tl-section like any normal tall element.
-  No overflow:hidden. No JS scroll handlers. Canvas drawn once.
+  The timeline SVG is virtualized to the visible row slice on very tall traces.
 */
 #tl-section  { position:relative; margin:0 16px; border:1px solid var(--border); border-radius:3px; }
 #tl-labels   { position:absolute; overflow:hidden; }
 .row-label   { position:absolute; left:4px; font-size:15px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#tl-canvas   { position:absolute; display:block; }
+#tl-svg      { position:absolute; display:block; overflow:hidden; }
+#tl-bg rect  { shape-rendering:crispEdges; }
+#tl-segs rect { stroke:none; cursor:pointer; }
 #tl-xsvg     { position:absolute; display:block; overflow:visible; pointer-events:none; }
 #tl-bsvg     { position:absolute; display:block; overflow:visible; }
 
 .panel-gap { height:24px; }
 
-/* parallelism */
-/* parallelism — two stacked sub-panels */
-#para-section { margin:0 16px; border:1px solid var(--border); border-radius:3px; display:flex; flex-direction:column; }
-#tc-wrap { position:relative; width:100%; }
-#wc-wrap { position:relative; width:100%; }
-#tc-canvas,#wc-canvas { position:absolute; top:0; display:block; }
-#tc-svg,#wc-svg { position:absolute; top:0; left:0; display:block; overflow:visible; pointer-events:none; }
-#para-bsvg { position:absolute; top:0; display:block; overflow:visible; }
-
 /* minimap */
 #mini-section { position:relative; margin:0 16px; border:1px solid var(--border); border-radius:3px; }
 #mini-canvas  { position:absolute; top:0; display:block; }
 #mini-svg     { position:absolute; top:0; left:0; display:block; overflow:visible; }
-
-/* executor statistics table */
-#exec-stats-wrap { margin:0 16px; }
-#exec-stats-scroll { overflow-x:auto; border:1px solid var(--border); border-radius:3px; max-height:360px; overflow-y:auto; }
-#exec-stats-table { width:100%; border-collapse:collapse; font-size:14px; }
-#exec-stats-table thead { position:sticky; top:0; z-index:2; background:var(--surface); }
-#exec-stats-table th {
-  padding:8px 12px; text-align:right; color:var(--muted); font-weight:600;
-  border-bottom:1px solid var(--border); white-space:nowrap; cursor:pointer;
-  user-select:none;
-}
-#exec-stats-table th:first-child { text-align:left; }
-#exec-stats-table th:hover { color:var(--text); }
-#exec-stats-table th.sort-asc::after  { content:' ▲'; font-size:11px; }
-#exec-stats-table th.sort-desc::after { content:' ▼'; font-size:11px; }
-#exec-stats-table td { padding:7px 12px; text-align:right; border-bottom:1px solid var(--border); color:var(--text); white-space:nowrap; }
-#exec-stats-table td:first-child { text-align:left; color:var(--accent); font-weight:600; }
-#exec-stats-table tbody tr:hover { background:rgba(88,166,255,.06); }
-#exec-stats-table tbody tr:last-child td { border-bottom:none; }
-.util-high  { color:#3dbf8a !important; }
-.util-mid   { color:#f59e0b !important; }
-.util-low   { color:#e06b6b !important; }
-#exec-stats-notes { font-size:13px; color:var(--muted); padding:8px 4px; line-height:1.6; }
-
-/* histogram */
-#hist-section { height:220px; }
-#hist-canvas  { position:absolute; top:0; display:block; }
 
 /* executor filter bar */
 #exec-filter-bar {
@@ -149,7 +115,7 @@ body { background:var(--bg); color:var(--text); }
 #exec-pop-list { max-height:320px; overflow-y:auto; padding:4px 0; }
 .exec-item {
   display:grid;
-  grid-template-columns: 20px 52px 1fr 1fr 1fr;
+  grid-template-columns: 20px minmax(92px, 1.4fr) 1fr 1fr 1fr;
   align-items:center; gap:6px;
   padding:6px 10px; cursor:pointer; font-size:15px; color:var(--text);
   user-select:none; border-bottom:1px solid rgba(48,54,61,.5);
@@ -162,7 +128,7 @@ body { background:var(--bg); color:var(--text); }
 .exec-item .ei-util-mi { color:#f59e0b !important; }
 .exec-item .ei-util-lo { color:#e06b6b !important; }
 .exec-pop-header-row {
-  display:grid; grid-template-columns:20px 52px 1fr 1fr 1fr;
+  display:grid; grid-template-columns:20px minmax(92px, 1.4fr) 1fr 1fr 1fr;
   gap:6px; padding:4px 10px;
   font-size:13px; color:var(--muted); letter-spacing:.05em; text-transform:uppercase;
   border-bottom:1px solid var(--border);
@@ -196,7 +162,7 @@ body { background:var(--bg); color:var(--text); }
   <button class="btn" id="btn-back"  style="display:none">← Back</button>
   <div class="sep"></div>
   <button id="theme-btn" title="Toggle light/dark mode">🌙</button>
-  <div id="status"><a href="https://github.com/taskflow/taskflow" target="_blank" style="color:var(--muted);text-decoration:none;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:15px;">Taskflow GitHub</a></div>
+  <div id="status"><a href="https://github.com/taskflow/taskflow" target="_blank" style="color:var(--muted);text-decoration:none;font-weight:700;font-size:15px;">Taskflow Github</a></div>
 </div>
 
 <div id="drop-zone">
@@ -222,7 +188,7 @@ body { background:var(--bg); color:var(--text); }
     <span style="margin-left:auto;font-size:15px">Brush to zoom · Double-click to go back</span>
   </div>
   <div id="stats">
-    <span>Workers: <b id="sw">—</b></span>
+    <span>Rows: <b id="sw">—</b></span>
     <span>Tasks: <b id="st">—</b></span>
     <span>Wall: <b id="swt">—</b></span>
     <span>Window: <b id="swin">—</b></span>
@@ -233,7 +199,7 @@ body { background:var(--bg); color:var(--text); }
 
   <!-- Executor filter bar -->
   <div id="exec-filter-bar">
-    <span id="exec-filter-label">Executors:</span>
+    <span id="exec-filter-label">Workers / Levels:</span>
     <button id="exec-filter-btn" class="btn">All <span id="exec-filter-count"></span> ▾</button>
     <button id="exec-filter-clear" class="btn" style="display:none">✕ Clear filter</button>
   </div>
@@ -241,7 +207,7 @@ body { background:var(--bg); color:var(--text); }
   <!-- Executor filter popover -->
   <div id="exec-popover">
     <div id="exec-pop-head">
-      <input id="exec-search" type="text" placeholder="Search executors…" autocomplete="off">
+      <input id="exec-search" type="text" placeholder="Search rows…" autocomplete="off">
       <div id="exec-pop-actions">
         <span id="exec-sel-all">Select all</span>
         <span style="color:var(--border)">|</span>
@@ -250,10 +216,10 @@ body { background:var(--bg); color:var(--text); }
     </div>
     <div class="exec-pop-header-row" id="exec-pop-headers">
       <span></span>
-      <span data-sort="id"    style="cursor:pointer">Exec</span>
-      <span data-sort="tasks" style="text-align:right;cursor:pointer">Tasks</span>
-      <span data-sort="util"  style="text-align:right;cursor:pointer">Util</span>
-      <span data-sort="peak"  style="text-align:right;cursor:pointer">Peak</span>
+      <span data-sort="key"     style="cursor:pointer">Row</span>
+      <span data-sort="tasks"   style="text-align:right;cursor:pointer">Tasks</span>
+      <span data-sort="active"  style="text-align:right;cursor:pointer">Active</span>
+      <span data-sort="longest" style="text-align:right;cursor:pointer">Longest</span>
     </div>
     <div id="exec-pop-list"></div>
     <div id="exec-pop-footer"><span id="exec-pop-count"></span></div>
@@ -261,7 +227,7 @@ body { background:var(--bg); color:var(--text); }
 
   <div id="tl-section">
     <div id="tl-labels"></div>
-    <canvas id="tl-canvas"></canvas>
+    <svg id="tl-svg"></svg>
     <svg id="tl-xsvg"></svg>
     <svg id="tl-bsvg"></svg>
   </div>
@@ -276,72 +242,12 @@ body { background:var(--bg); color:var(--text); }
 
   <div class="panel-gap"></div>
 
-  <div class="slabel">Task Parallelism vs Active Workers</div>
-  <div id="para-section">
-    <!-- Task count sub-panel -->
-    <div id="tc-wrap" style="position:relative;">
-      <canvas id="tc-canvas"></canvas>
-      <svg id="tc-svg"></svg>
-    </div>
-    <!-- Active worker count sub-panel (shares x-axis label at bottom) -->
-    <div id="wc-wrap" style="position:relative;">
-      <canvas id="wc-canvas"></canvas>
-      <svg id="wc-svg"></svg>
-      <svg id="para-bsvg"></svg>
-    </div>
-  </div>
-
-  <div class="panel-gap"></div>
-
-  <div class="slabel">Critical Tasks — top
-    <input id="rank-n" type="number" value="50" min="1" max="500"
-      style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:15px;font-family:inherit;border-radius:3px;padding:1px 5px;margin:0 4px;"> by duration
+  <div class="slabel">Top
+    <input id="rank-n" type="number" value="100" min="1" max="500"
+      style="width:60px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:15px;font-family:inherit;border-radius:3px;padding:1px 5px;margin:0 4px;"> tasks by duration
+    <span id="rank-count"></span>
   </div>
   <div id="rank-section"><svg id="rank-svg"></svg></div>
-
-  <div class="panel-gap"></div>
-
-  <!-- Executor Statistics Table -->
-  <div class="slabel">Executor Statistics</div>
-  <div id="exec-stats-wrap">
-    <div id="exec-stats-scroll">
-      <table id="exec-stats-table">
-        <thead>
-          <tr>
-            <th data-col="id">Executor</th>
-            <th data-col="workers">Workers</th>
-            <th data-col="tasks">Tasks</th>
-            <th data-col="wall">Wall Time</th>
-            <th data-col="active">Active Time</th>
-            <th data-col="idle">Idle Time</th>
-            <th data-col="util">Utilization</th>
-            <th data-col="peak">Peak</th>
-            <th data-col="tmin">Min Dur</th>
-            <th data-col="tavg">Avg Dur</th>
-            <th data-col="tmax">Max Dur</th>
-          </tr>
-        </thead>
-        <tbody id="exec-stats-body"></tbody>
-      </table>
-    </div>
-    <div id="exec-stats-notes">
-      <b>Notes:</b>
-      Active Time = union of all task intervals (wall-clock time any worker was busy) ·
-      Idle Time = Wall Time − Active Time ·
-      Utilization = Σ(worker active time) / (Workers × Wall Time) ·
-      Peak = max simultaneous active workers ·
-      Dur columns = per-task duration statistics
-    </div>
-  </div>
-
-  <div class="panel-gap"></div>
-
-  <!-- Task Duration Histogram -->
-  <div class="slabel">Task Duration Distribution</div>
-  <div id="hist-section" style="margin:0 16px;border:1px solid var(--border);border-radius:3px;position:relative;">
-    <canvas id="hist-canvas"></canvas>
-    <svg id="hist-svg" style="position:absolute;top:0;left:0;overflow:hidden;pointer-events:none;"></svg>
-  </div>
 
   <div style="height:32px"></div>
 </div>
@@ -356,7 +262,7 @@ const TNAMES  = ['static','subflow','condition','module','async'];
 const TCOLORS = {static:'#4c8eda',subflow:'#e07b39',condition:'#3dbf8a',module:'#9b6fe0',async:'#e06b6b',clustered:'#6e7681'};
 
 // Row geometry: each row is ROW_H px tall with ROW_GAP px below it.
-// Canvas height = PAD_TOP + N*(ROW_H+ROW_GAP) + PAD_BOT
+// Timeline height = PAD_TOP + N*(ROW_H+ROW_GAP) + PAD_BOT.
 // This is computed once and never changes on scroll.
 const ROW_H    = 20;
 const ROW_GAP  = 5;
@@ -364,7 +270,6 @@ const PAD_TOP  = 12;
 const PAD_BOT  = 12;
 const LABEL_W  = 140;
 const XAXIS_H  = 44;   // extra height for two-line tick labels (number + unit)
-const PARA_H   = 120;
 const MINI_H   = 36;
 const RANK_H   = 280;
 const MAX_RECTS = 2000;
@@ -376,9 +281,9 @@ const D = {
   minUs:0,maxUs:0, x0:0,x1:0, xHistory:[],
   rowH:ROW_H, rowStride:ROW_H+ROW_GAP,
   totalRowsH:0, sectionH:0, canvasH:0, scrollTop:0,
-  workerCurve:null, taskCurve:null, rankData:null,
+  rankData:null,
   drawnRects:null, minSegDur:1,
-  filteredWorkers:null
+  filteredWorkers:null, rowStats:null
 };
 
 // ── DOM ────────────────────────────────────────────────────────────────────
@@ -389,15 +294,9 @@ const elPText   = document.getElementById('ptext');
 const elPBar    = document.getElementById('pbar');
 const tlSection = document.getElementById('tl-section');
 const tlLabels  = document.getElementById('tl-labels');
-const tlCanvas  = document.getElementById('tl-canvas');
+const tlSvg     = document.getElementById('tl-svg');
 const tlXSvg    = document.getElementById('tl-xsvg');
 const tlBSvg    = document.getElementById('tl-bsvg');
-const paraSect  = document.getElementById('para-section');
-const tcCanvas  = document.getElementById('tc-canvas');
-const tcSvg     = document.getElementById('tc-svg');
-const wcCanvas  = document.getElementById('wc-canvas');
-const wcSvg     = document.getElementById('wc-svg');
-const paraBSvg  = document.getElementById('para-bsvg');
 const miniSect  = document.getElementById('mini-section');
 const miniCanvas= document.getElementById('mini-canvas');
 const miniSvg   = document.getElementById('mini-svg');
@@ -486,8 +385,8 @@ function setupCanvas(canvas, cssW, cssH) {
   return ctx;
 }
 
-// Width available for the canvas = section width minus label column
-// Canvas width — cached from ResizeObserver, always correct.
+// Width available for the timeline = section width minus label column.
+// Timeline width — cached from ResizeObserver, always correct.
 // Falls back to window.innerWidth calculation if not yet observed.
 let _cachedCW = 0;
 
@@ -512,8 +411,8 @@ const _sectionObserver = new ResizeObserver(entries => {
 // Observe immediately — will fire once tl-section gets its first real size
 _sectionObserver.observe(tlSection);
 
-// Scroll handler — only active when canvas is shorter than the logical rows height.
-// Repositions canvas top and redraws visible rows on scroll.
+// Scroll handler — only active when the SVG viewport is shorter than the
+// logical rows height. Repositions the visible SVG slice on scroll.
 window.addEventListener('scroll', () => {
   if (!D.beg || D.canvasH >= D.totalRowsH) return;  // no virtual scroll needed
 
@@ -526,18 +425,18 @@ window.addEventListener('scroll', () => {
   if (Math.abs(newScrollTop - D.scrollTop) < 1) return;  // no change
   D.scrollTop = newScrollTop;
 
-  // Reposition canvas and brush to stay in the visible viewport area
-  tlCanvas.style.top = D.scrollTop + 'px';
-  tlBSvg.style.top   = D.scrollTop + 'px';
+  // Reposition timeline SVG and brush to stay in the visible viewport area
+  tlSvg.style.top  = D.scrollTop + 'px';
+  tlBSvg.style.top = D.scrollTop + 'px';
 
-  // Scroll: only repaint visible rows — drawnRects cache still valid
-  paintTimelineCanvas();
+  // Scroll: only rebind visible rows — drawnRects cache still valid
+  renderTimelineSvg();
 }, { passive: true });
 
-// x: microseconds → canvas pixel
+// x: microseconds → timeline pixel
 function xpx(us) { return (us - D.x0) / (D.x1 - D.x0) * cW(); }
 
-// Canvas y of row ri (top of the row bar)
+// Logical y of row ri (top of the row bar)
 function rowY(ri) { return PAD_TOP + ri * D.rowStride; }
 
 // ── File loading ───────────────────────────────────────────────────────────
@@ -548,7 +447,7 @@ function loadFile(file) {
   r.readAsArrayBuffer(file);
 }
 
-let parserW=null, sweepW=null, sweepPending=false;
+let parserW=null;
 
 function spawnParser(buf) {
   if(parserW) parserW.terminate();
@@ -579,7 +478,7 @@ function onParsed(msg) {
 
   // Always use full comfortable row height — never compress rows.
   // tl-section and tl-labels are full logical height (page scrolls naturally).
-  // Canvas height is capped at maxCssH; scroll handler redraws visible rows.
+  // Timeline SVG height is capped at maxCssH; scroll handler rebinds visible rows.
   const n       = D.workers.length;
   const dpr     = window.devicePixelRatio || 1;
   D.rowH        = ROW_H;
@@ -589,43 +488,17 @@ function onParsed(msg) {
   D.canvasH     = Math.min(D.totalRowsH, Math.floor(BROWSER_MAX_H / dpr));
   D.scrollTop   = 0;
 
-  document.getElementById('sw').textContent  = msg.meta.numWorkers;
   const physMap = new Map();
   msg.workers.forEach(w => physMap.set(w.executorId+'_'+w.workerIdx, true));
   D.numPhysicalWorkers = physMap.size;
-  document.getElementById('sw').textContent = D.numPhysicalWorkers + ' (' + msg.meta.numWorkers + ' levels)';
+  document.getElementById('sw').textContent = msg.meta.numWorkers + ' (' + D.numPhysicalWorkers + ' workers)';
   document.getElementById('st').textContent  = msg.meta.totalSegs.toLocaleString();
   document.getElementById('swt').textContent = fmtUs(D.maxUs-D.minUs);
 
   buildRank();
-  spawnSweep();
   D.filteredWorkers = D.workers;
   initExecFilter();
   showProfiler();
-}
-
-// ── Sweep worker ───────────────────────────────────────────────────────────
-function spawnSweep() {
-  // Clear para SVGs completely so old axes don't accumulate
-  d3.select(tcSvg).selectAll('*').remove();
-  d3.select(wcSvg).selectAll('*').remove();
-  d3.select(paraBSvg).selectAll('*').remove();
-  pTcAxisY=null; pWcAxisX=null; pWcAxisY=null; pBrushG=null;
-  if(sweepW) sweepW.terminate();
-  sweepW = new Worker(URL.createObjectURL(
-    new Blob([document.getElementById('src-sweep').textContent],{type:'application/javascript'})));
-  sweepW.onmessage = e => {
-    if(e.data.type==='ready'){querySweep();return;}
-    if(e.data.type==='result'){D.workerCurve=e.data.wc;D.taskCurve=e.data.tc;sweepPending=false;drawPara();}
-  };
-  const fw = D.filteredWorkers || D.workers;
-  const bc=new Float64Array(D.beg), ec=new Float64Array(D.end);
-  sweepW.postMessage({type:'init',beg:bc,end:ec,workers:fw,minUs:D.minUs,maxUs:D.maxUs},[bc.buffer,ec.buffer]);
-}
-function querySweep(){
-  if(!sweepW||sweepPending)return;
-  sweepPending=true;
-  sweepW.postMessage({type:'query',x0:D.x0,x1:D.x1,px:cW()});
 }
 
 // ── Rank ───────────────────────────────────────────────────────────────────
@@ -676,21 +549,11 @@ function render(){
   drawTimeline();
   drawMini();
   buildRank();
+  computeRowStats();
   drawRank();
-  querySweep();
   document.getElementById('swin').textContent=fmtUs(D.x1-D.x0);
-  // Defer heavy stats/histogram computation — use requestIdleCallback if available
-  // so the browser paints the timeline first before computing stats
-  clearTimeout(_statsTimer);
-  _statsTimer = setTimeout(()=>{
-    if(typeof requestIdleCallback !== 'undefined'){
-      requestIdleCallback(()=>{ computeExecStats(); }, {timeout:2000});
-    } else {
-      computeExecStats();
-    }
-  }, 100);
+  buildExecList(document.getElementById('exec-search')?.value || '');
 }
-let _statsTimer = null;
 
 // ── Render cache keys ──────────────────────────────────────────────────────
 // drawnRects only needs rebuilding when zoom window or filter changes,
@@ -717,7 +580,7 @@ function applyLayout(){
   const workers = D.filteredWorkers || D.workers;
   const n  = workers.length;
   const tH = D.totalRowsH;   // full logical height (section + labels)
-  const cH = D.canvasH;      // canvas height (capped at browser limit)
+  const cH = D.canvasH;      // visible timeline SVG viewport height
   const sH = D.sectionH;     // full section height (rows + x-axis)
 
   // tl-section: full height
@@ -745,41 +608,20 @@ function applyLayout(){
     tlLabels.appendChild(el);
   }
 
-  // tl-canvas: capped height; redraws visible slice on scroll when tH > cH
-  tlCanvas.style.left = LABEL_W + 'px';
-  tlCanvas.style.top  = D.scrollTop + 'px';
-  setupCanvas(tlCanvas, _cW, cH);
+  // tl-svg: capped viewport; rebinds visible slice on scroll when tH > cH
+  tlSvg.style.left = LABEL_W + 'px';
+  tlSvg.style.top  = D.scrollTop + 'px';
+  d3.select(tlSvg).attr('width', _cW).attr('height', cH);
 
   // tl-xsvg: x-axis strip, always below the full logical rows area
   tlXSvg.style.left = LABEL_W + 'px';
   tlXSvg.style.top  = tH + 'px';
   d3.select(tlXSvg).attr('width', _cW).attr('height', XAXIS_H);
 
-  // tl-bsvg: brush overlay, same visible area as canvas
+  // tl-bsvg: brush overlay, same visible area as the timeline SVG
   tlBSvg.style.left = LABEL_W + 'px';
   tlBSvg.style.top  = D.scrollTop + 'px';
   d3.select(tlBSvg).attr('width', _cW).attr('height', cH);
-
-  // para-section: two stacked sub-panels in flex column
-  // Top: task count (no x-axis). Bottom: active workers (with x-axis).
-  const SUB_H = 100;
-  const tcWrap = document.getElementById('tc-wrap');
-  const wcWrap = document.getElementById('wc-wrap');
-  const tcTotalH = SUB_H;
-  const wcTotalH = SUB_H + XAXIS_H;
-  paraSect.style.height = (tcTotalH + wcTotalH) + 'px';
-
-  tcWrap.style.height = tcTotalH + 'px';
-  tcCanvas.style.left = LABEL_W + 'px';
-  setupCanvas(tcCanvas, _cW, SUB_H);
-  d3.select(tcSvg).attr('width', LABEL_W+_cW).attr('height', tcTotalH);
-
-  wcWrap.style.height = wcTotalH + 'px';
-  wcCanvas.style.left = LABEL_W + 'px';
-  setupCanvas(wcCanvas, _cW, SUB_H);
-  d3.select(wcSvg).attr('width', LABEL_W+_cW).attr('height', wcTotalH);
-  paraBSvg.style.left = LABEL_W + 'px';
-  d3.select(paraBSvg).attr('width', _cW).attr('height', wcTotalH);
 
   // mini-section
   const miniH = MINI_H + XAXIS_H;
@@ -790,8 +632,8 @@ function applyLayout(){
 }
 
 // ── Draw timeline ──────────────────────────────────────────────────────────
-// Canvas Y for row ri, accounting for scroll offset
-function canvasY(ri){ return rowY(ri) - D.scrollTop; }
+// Viewport Y for row ri, accounting for scroll offset.
+function viewportY(ri){ return rowY(ri) - D.scrollTop; }
 
 // Pass 1: rebuild drawnRects for all rows — only when zoom/filter changes.
 // This is the expensive O(N × segs_per_worker) pass.
@@ -824,44 +666,59 @@ function rebuildDrawnRects() {
   return vis;
 }
 
-// Pass 2: paint only visible rows onto canvas — fast O(visible × segs) pass.
+// Pass 2: render only visible rows into SVG — fast O(visible × segs) pass.
 // Called on both zoom (after rebuildDrawnRects) and scroll.
-function paintTimelineCanvas() {
-  const ctx = tlCanvas.getContext('2d');
-  const W   = _cW;
-  const cH  = D.canvasH;
+function renderTimelineSvg() {
+  const svg = d3.select(tlSvg);
   const workers = D.filteredWorkers || D.workers;
   const n   = workers.length;
 
-  ctx.clearRect(0, 0, W, cH);
-
   const firstRow = Math.max(0, Math.floor((D.scrollTop - PAD_TOP) / D.rowStride));
-  const lastRow  = Math.min(n, Math.ceil((D.scrollTop + cH - PAD_TOP) / D.rowStride));
+  const lastRow  = Math.min(n, Math.ceil((D.scrollTop + D.canvasH - PAD_TOP) / D.rowStride));
 
-  // Row backgrounds
+  const rowBg = [];
   for(let ri=firstRow; ri<lastRow; ri++){
-    ctx.fillStyle = ri%2===0 ? getComputedStyle(document.documentElement).getPropertyValue('--row-even').trim()
-                              : getComputedStyle(document.documentElement).getPropertyValue('--row-odd').trim();
-    ctx.fillRect(0, canvasY(ri), W, D.rowH);
+    rowBg.push({ri, y:viewportY(ri)});
   }
 
-  // Draw segments for visible rows only — read from drawnRects cache
+  let bgG = svg.select('g#tl-bg');
+  if(bgG.empty()) bgG = svg.append('g').attr('id','tl-bg');
+  bgG.selectAll('rect')
+    .data(rowBg, d=>d.ri)
+    .join('rect')
+      .attr('x', 0)
+      .attr('y', d=>d.y)
+      .attr('width', _cW)
+      .attr('height', D.rowH)
+      .attr('fill', d=>d.ri%2===0 ? 'var(--row-even)' : 'var(--row-odd)');
+
+  // Draw segments for visible rows only — read from drawnRects cache.
   const padY = Math.max(1, Math.floor(D.rowH*0.1));
   const segH = Math.max(1, D.rowH - padY*2);
+  const segData = [];
 
   for(let ri=firstRow; ri<lastRow; ri++){
     if(!D.drawnRects||!D.drawnRects[ri]||!D.drawnRects[ri].length) continue;
-    const sy = canvasY(ri) + padY;
     const rects = D.drawnRects[ri];
     for(let k=0; k<rects.length; k++){
-      const {beg:cB, end:cE, type:cT, clustered:cl} = rects[k];
-      const px0=xpx(cB), pw=Math.max(1, xpx(cE)-px0);
-      ctx.fillStyle=cl?TCOLORS.clustered:(TCOLORS[TNAMES[cT]]||TCOLORS.static);
-      ctx.globalAlpha=.85;
-      ctx.fillRect(Math.floor(px0), sy, Math.ceil(pw), segH);
+      const r = rects[k];
+      segData.push({...r, ri, k, y:viewportY(ri)+padY});
     }
   }
-  ctx.globalAlpha=1;
+
+  let segG = svg.select('g#tl-segs');
+  if(segG.empty()) segG = svg.append('g').attr('id','tl-segs');
+  segG.selectAll('rect')
+    .data(segData, d=>`${d.ri}:${d.k}:${d.beg}:${d.end}`)
+    .join('rect')
+      .attr('x', d=>Math.floor(xpx(d.beg)))
+      .attr('y', d=>d.y)
+      .attr('width', d=>Math.max(1, Math.ceil(xpx(d.end)-xpx(d.beg))))
+      .attr('height', segH)
+      .attr('rx', 1)
+      .attr('ry', 1)
+      .attr('fill', d=>d.clustered ? TCOLORS.clustered : (TCOLORS[TNAMES[d.type]] || TCOLORS.static))
+      .attr('opacity', .85);
 }
 
 function drawTimeline(){
@@ -872,7 +729,7 @@ function drawTimeline(){
     document.getElementById('sv').textContent=vis.toLocaleString();
   }
 
-  paintTimelineCanvas();
+  renderTimelineSvg();
 
   // x-axis in tl-xsvg
   const xSc=d3.scaleLinear().domain([D.x0,D.x1]).range([0,_cW]);
@@ -899,91 +756,6 @@ function drawTimeline(){
     });
   if(!tlBrushG)tlBrushG=bsvg.append('g').attr('class','brush');
   tlBrushG.call(tlBrush);
-}
-
-// ── Draw parallelism ───────────────────────────────────────────────────────
-let pTcAxisY=null, pWcAxisX=null, pWcAxisY=null, pBrushG=null, pBrush=null, pDbl=null;
-
-function drawPara(){
-  if(!D.workerCurve)return;
-  const wc=D.workerCurve,tc=D.taskCurve,N=wc.length;
-  if(!N)return;
-  const W=_cW, H=100;
-  const xSc=d3.scaleLinear().domain([D.x0,D.x1]).range([LABEL_W,LABEL_W+W]);
-
-  // ── Top panel: Task count ──────────────────────────────────────────────
-  let mT=0; for(let i=0;i<N;i++) if(tc[i]>mT) mT=tc[i];
-  if(mT>0){
-    const ctx=tcCanvas.getContext('2d');
-    ctx.clearRect(0,0,W,H);
-    const toY=v=>H-(v/mT)*(H-24)-4;
-    ctx.beginPath();ctx.moveTo(0,H);
-    for(let i=0;i<N;i++) ctx.lineTo(i/N*W,toY(tc[i]));
-    ctx.lineTo(W,H);ctx.closePath();
-    ctx.fillStyle='#4c8eda';ctx.globalAlpha=.25;ctx.fill();
-    ctx.beginPath();ctx.globalAlpha=1;ctx.strokeStyle='#4c8eda';ctx.lineWidth=1.5;
-    for(let i=0;i<N;i++){const x=i/N*W;i?ctx.lineTo(x,toY(tc[i])):ctx.moveTo(x,toY(tc[i]));}
-    ctx.stroke();
-    ctx.globalAlpha=1;
-    const svg=d3.select(tcSvg);
-    if(!pTcAxisY) pTcAxisY=svg.append('g').attr('class','axis');
-    // label
-    if(!svg.select('.tc-label').node()){
-      svg.append('text').attr('class','tc-label')
-        .attr('x',8).attr('y',16).attr('fill','#8b949e').attr('font-size',15)
-        .text('Task');
-    }
-    pTcAxisY.attr('transform',`translate(${LABEL_W},0)`)
-      .call(d3.axisLeft(d3.scaleLinear().domain([0,mT]).range([H-4,20])).ticks(3));
-  }
-
-  // ── Bottom panel: Active worker count ──────────────────────────────────
-  let mW=0; for(let i=0;i<N;i++) if(wc[i]>mW) mW=wc[i];
-  if(mW>0){
-    const ctx=wcCanvas.getContext('2d');
-    ctx.clearRect(0,0,W,H);
-    const toY=v=>H-(v/mW)*(H-24)-4;
-    ctx.beginPath();ctx.moveTo(0,H);
-    for(let i=0;i<N;i++) ctx.lineTo(i/N*W,toY(wc[i]));
-    ctx.lineTo(W,H);ctx.closePath();
-    ctx.fillStyle='#3dbf8a';ctx.globalAlpha=.3;ctx.fill();
-    ctx.beginPath();ctx.globalAlpha=1;ctx.strokeStyle='#3dbf8a';ctx.lineWidth=1.5;
-    for(let i=0;i<N;i++){const x=i/N*W;i?ctx.lineTo(x,toY(wc[i])):ctx.moveTo(x,toY(wc[i]));}
-    ctx.stroke();
-    ctx.globalAlpha=1;
-    const svg=d3.select(wcSvg);
-    if(!pWcAxisY) pWcAxisY=svg.append('g').attr('class','axis');
-    if(!pWcAxisX) pWcAxisX=svg.append('g').attr('class','axis');
-    if(!svg.select('.wc-label').node()){
-      svg.append('text').attr('class','wc-label')
-        .attr('x',8).attr('y',16).attr('fill','#8b949e').attr('font-size',15)
-        .text('Worker');
-    }
-    pWcAxisY.attr('transform',`translate(${LABEL_W},0)`)
-      .call(d3.axisLeft(d3.scaleLinear().domain([0,mW]).range([H-4,20])).ticks(3));
-    const {fmt:wcFmt, unit:wcUnit} = axisTickInfo(D.x0, D.x1);
-    pWcAxisX.attr('transform',`translate(0,${H})`)
-      .call(d3.axisBottom(xSc).ticks(5).tickFormat(wcFmt));
-    splitAxisTicks(pWcAxisX, wcUnit);
-  }
-
-  // ── Brush on bottom panel for zoom ────────────────────────────────────
-  const xScBrush=d3.scaleLinear().domain([D.x0,D.x1]).range([0,W]);
-  const bsvg=d3.select(paraBSvg);
-  pBrush=d3.brushX().extent([[0,0],[W,100+XAXIS_H]])
-    .on('end',function(ev){
-      if(!ev.sourceEvent)return;
-      if(ev.selection){
-        const x0=xScBrush.invert(ev.selection[0]),x1=xScBrush.invert(ev.selection[1]);
-        bsvg.select('.pbr').call(pBrush.move,null);
-        if(x1-x0>D.minSegDur/2)zoomTo(x0,x1);
-      } else {
-        if(!pDbl){pDbl=setTimeout(()=>{pDbl=null;},300);}
-        else{clearTimeout(pDbl);pDbl=null;zoomBack();}
-      }
-    });
-  if(!pBrushG)pBrushG=bsvg.append('g').attr('class','pbr');
-  pBrushG.call(pBrush);
 }
 
 // ── Draw minimap ───────────────────────────────────────────────────────────
@@ -1027,8 +799,12 @@ function drawMini(){
 let rXG=null,rYG=null,rBarsG=null,rLblG=null;
 
 function drawRank(){
-  const N=Math.max(1,Math.min(500,parseInt(document.getElementById('rank-n').value)||50));
+  const N=Math.max(1,Math.min(500,parseInt(document.getElementById('rank-n').value)||100));
   const sl=D.rankData.slice(0,N);
+  const rankCount = document.getElementById('rank-count');
+  if(rankCount) {
+    rankCount.textContent = ` of ${D.rankData.length.toLocaleString()} visible tasks`;
+  }
   const tW=tlSection.clientWidth-2,mL=LABEL_W,mR=20,mT=16,mB=40,iW=tW-mL-mR,iH=RANK_H-mT-mB;
   const svg=d3.select(rankSvg).attr('width',tW).attr('height',RANK_H);
   const xSc=d3.scaleBand().domain(sl.map((_,i)=>i)).range([mL,mL+iW]).padding(.15);
@@ -1040,7 +816,8 @@ function drawRank(){
   if(!rLblG)rLblG=svg.append('text').attr('fill','#8b949e').attr('font-size',15).attr('text-anchor','middle');
   rXG.attr('transform',`translate(0,${mT+iH})`).call(d3.axisBottom(xSc).tickFormat(''));
   rYG.attr('transform',`translate(${mL},0)`).call(d3.axisLeft(ySc).ticks(6).tickFormat(d=>fmtUs(d)).tickSize(-iW));
-  rLblG.attr('transform',`translate(${mL+iW/2},${mT+iH+32})`).text(`Top ${sl.length} tasks by duration`);
+  rLblG.attr('transform',`translate(${mL+iW/2},${mT+iH+32})`)
+    .text(`Top ${sl.length} of ${D.rankData.length.toLocaleString()} visible tasks`);
   const bars=rBarsG.selectAll('rect').data(sl,(_,i)=>i);
   bars.exit().remove();
   bars.enter().append('rect').attr('rx',1).merge(bars)
@@ -1070,23 +847,22 @@ function showTip(ev,h){tip.innerHTML=h;tip.classList.add('show');moveTip(ev);}
 function moveTip(ev){tip.style.left=Math.min(ev.clientX+14,window.innerWidth-310)+'px';tip.style.top=Math.min(ev.clientY-10,window.innerHeight-110)+'px';}
 function hideTip(){tip.classList.remove('show');}
 
-// Hover on tlBSvg (the brush SVG on top of the canvas) — tlCanvas is beneath
-// it and never receives mouse events directly.
+// Hover on tlBSvg (the brush SVG on top of the timeline SVG).
 // Track the last hovered cluster for tooltip display
 let _hoveredCluster = null;
 let _lastMoveX = 0, _lastMoveY = 0;
+let _tlPointerDown = null;
 
-tlBSvg.addEventListener('mousemove',ev=>{
-  _lastMoveX=ev.clientX; _lastMoveY=ev.clientY;
+function timelineHitFromEvent(ev) {
   if(!D.drawnRects) return;
   const r=tlBSvg.getBoundingClientRect();
   const px=ev.clientX-r.left, py=ev.clientY-r.top;
-  // py is canvas-relative; add scrollTop to get logical Y
+  // py is viewport-relative; add scrollTop to get logical Y
   const logY = py + D.scrollTop;
   const ri=Math.floor((logY-PAD_TOP)/D.rowStride);
   const _fw = D.filteredWorkers||D.workers;
-  if(ri<0||ri>=_fw.length||!D.drawnRects[ri]){hideTip();_hoveredCluster=null;return;}
-  if((logY-PAD_TOP)%D.rowStride>=D.rowH){hideTip();_hoveredCluster=null;return;}
+  if(ri<0||ri>=_fw.length||!D.drawnRects[ri]) return null;
+  if((logY-PAD_TOP)%D.rowStride>=D.rowH) return null;
 
   const us=D.x0+(px/_cW)*(D.x1-D.x0);
   const rects=D.drawnRects[ri];
@@ -1094,9 +870,21 @@ tlBSvg.addEventListener('mousemove',ev=>{
   for(let i=0;i<rects.length;i++){
     if(rects[i].beg<=us&&rects[i].end>=us){hit=rects[i];break;}
   }
-  if(!hit){hideTip();_hoveredCluster=null;return;}
+  return hit ? {hit, row:_fw[ri], us} : null;
+}
 
-  const w=_fw[ri];
+function zoomToTimelineHit(hit) {
+  const span = hit.end - hit.beg;
+  const pad = Math.max(D.minSegDur, span * 0.5);
+  zoomTo(Math.max(D.minUs, hit.beg - pad), Math.min(D.maxUs, hit.end + pad));
+}
+
+tlBSvg.addEventListener('mousemove',ev=>{
+  _lastMoveX=ev.clientX; _lastMoveY=ev.clientY;
+  const h = timelineHitFromEvent(ev);
+  if(!h){hideTip();_hoveredCluster=null;return;}
+
+  const {hit, row:w, us} = h;
   if(hit.clustered){
     _hoveredCluster=hit;
     showTip(ev,
@@ -1105,14 +893,13 @@ tlBSvg.addEventListener('mousemove',ev=>{
       `<div class="tm">Worker:   ${w.key}</div>` +
       `<div class="tm">Span:     ${fmtUs(hit.beg)} → ${fmtUs(hit.end)}</div>` +
       `<div class="tm">Duration: ${fmtUs(hit.end-hit.beg)}</div>` +
-      `<div style="margin-top:4px;font-size:14px;color:var(--accent)">Brush to zoom in and see individual tasks</div>`
+      `<div style="margin-top:4px;font-size:14px;color:var(--accent)">Click or brush to zoom in</div>`
     );
   } else {
     _hoveredCluster=null;
-    const w2=_fw[ri];
     let f=-1;
-    for(let s=0;s<w2.length;s++){
-      const i=w2.offset+s;
+    for(let s=0;s<w.length;s++){
+      const i=w.offset+s;
       if(D.beg[i]<=us&&D.end[i]>=us){f=i;break;}
     }
     if(f===-1){hideTip();return;}
@@ -1122,300 +909,31 @@ tlBSvg.addEventListener('mousemove',ev=>{
       `<div>${D.names[f]||'(anonymous)'}</div>` +
       `<div class="tm">Worker:   ${w.key}</div>` +
       `<div class="tm">Duration: ${fmtUs(D.end[f]-D.beg[f])}</div>` +
-      `<div class="tm">Start:    ${fmtUs(D.beg[f])}</div>`
+      `<div class="tm">Start:    ${fmtUs(D.beg[f])}</div>` +
+      `<div style="margin-top:4px;font-size:13px;color:var(--accent)">Click to zoom in</div>`
     );
   }
 });
 
-tlBSvg.addEventListener('mouseleave',hideTip);
-
-// ── Executor Statistics ────────────────────────────────────────────────────
-
-let _execStats = [];
-let _statsSortCol = 'id';
-let _statsSortAsc = true;
-
-let _statsCache = { x0:null, x1:null, filter:null };
-
-function computeExecStats() {
-  const fw = D.filteredWorkers || D.workers;
-  // Skip recomputation if zoom window and filter are unchanged
-  if(_statsCache.x0===D.x0 && _statsCache.x1===D.x1 && _statsCache.filter===fw) {
-    renderExecStatsTable();
-    buildHistExecSelector();
-    buildExecList(document.getElementById('exec-search')?.value || '');
-    return;
+tlBSvg.addEventListener('click',ev=>{
+  if(_tlPointerDown) {
+    const dx = ev.clientX - _tlPointerDown.x;
+    const dy = ev.clientY - _tlPointerDown.y;
+    _tlPointerDown = null;
+    if(Math.hypot(dx, dy) > 3) return;
   }
-  _statsCache = { x0:D.x0, x1:D.x1, filter:fw };
-  const groups = new Map();
-  fw.forEach(w => {
-    if (!groups.has(w.executorId)) groups.set(w.executorId, []);
-    groups.get(w.executorId).push(w);
-  });
-
-  // Use current zoom window — stats reflect what's visible
-  const winX0 = D.x0, winX1 = D.x1;
-  const wallUs = winX1 - winX0;
-  _execStats = [];
-
-  groups.forEach((workers, eid) => {
-    const physSet = new Set(workers.map(w => w.workerIdx));
-    const nPhys = physSet.size;
-
-    let totalTasks=0, sumDur=0, minDur=Infinity, maxDur=0;
-    const segs=[];
-    workers.forEach(w => {
-      for(let s=0;s<w.length;s++){
-        const i=w.offset+s;
-        // Clamp to zoom window
-        const b=Math.max(D.beg[i], winX0), e=Math.min(D.end[i], winX1);
-        if(b>=e) continue;
-        const dur=D.end[i]-D.beg[i];  // actual task duration (not clamped)
-        totalTasks++; sumDur+=dur;
-        if(dur<minDur)minDur=dur; if(dur>maxDur)maxDur=dur;
-        segs.push([b,e]);
-      }
-    });
-
-    // Active time = union of all intervals
-    segs.sort((a,b)=>a[0]-b[0]);
-    let activeUs=0, curB=-Infinity, curE=-Infinity;
-    segs.forEach(([b,e])=>{
-      if(b>curE){if(curE>-Infinity)activeUs+=curE-curB;curB=b;curE=e;}
-      else if(e>curE)curE=e;
-    });
-    if(curE>-Infinity)activeUs+=curE-curB;
-
-    // Utilization = Σ(worker active time) / (nPhys × wallUs)
-    const physMap=new Map();
-    workers.forEach(w=>{
-      if(!physMap.has(w.workerIdx))physMap.set(w.workerIdx,[]);
-      for(let s=0;s<w.length;s++){
-        const i=w.offset+s;
-        const b=Math.max(D.beg[i],winX0), e=Math.min(D.end[i],winX1);
-        if(b<e) physMap.get(w.workerIdx).push([b,e]);
-      }
-    });
-    let totalWorkerActive=0;
-    physMap.forEach(ws=>{
-      ws.sort((a,b)=>a[0]-b[0]);
-      let wb=-Infinity,we=-Infinity;
-      ws.forEach(([b,e])=>{
-        if(b>we){if(we>-Infinity)totalWorkerActive+=we-wb;wb=b;we=e;}
-        else if(e>we)we=e;
-      });
-      if(we>-Infinity)totalWorkerActive+=we-wb;
-    });
-    const util = nPhys>0&&wallUs>0 ? totalWorkerActive/(nPhys*wallUs) : 0;
-
-    // Peak parallelism
-    const events=[];
-    segs.forEach(([b,e])=>{events.push([b,1]);events.push([e,-1]);});
-    events.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
-    let peak=0,cur=0;
-    events.forEach(([,d])=>{cur+=d;if(cur>peak)peak=cur;});
-
-    _execStats.push({id:eid, workers:nPhys, tasks:totalTasks,
-      wall:wallUs, active:activeUs, idle:wallUs-activeUs,
-      util, peak,
-      tmin:totalTasks?minDur:0, tavg:totalTasks?sumDur/totalTasks:0, tmax:maxDur});
-  });
-
-  renderExecStatsTable();
-  buildHistExecSelector();
-  // Rebuild exec filter list so stats columns are populated
-  buildExecList(document.getElementById('exec-search')?.value || '');
-}
-
-function renderExecStatsTable() {
-  const tbody = document.getElementById('exec-stats-body');
-  if(!tbody) return;
-  tbody.innerHTML='';
-  const sorted=[..._execStats].sort((a,b)=>{
-    const av=a[_statsSortCol],bv=b[_statsSortCol];
-    return _statsSortAsc?(av>bv?1:av<bv?-1:0):(av<bv?1:av>bv?-1:0);
-  });
-  sorted.forEach(s=>{
-    const u=(s.util*100).toFixed(1);
-    const uClass=s.util>=0.8?'util-high':s.util>=0.5?'util-mid':'util-low';
-    const tr=document.createElement('tr');
-    tr.innerHTML=
-      `<td>E${s.id}</td><td>${s.workers}</td><td>${s.tasks.toLocaleString()}</td>`+
-      `<td>${fmtUs(s.wall)}</td><td>${fmtUs(s.active)}</td><td>${fmtUs(s.idle)}</td>`+
-      `<td class="${uClass}">${u}%</td><td>${s.peak}</td>`+
-      `<td>${fmtUs(s.tmin)}</td><td>${fmtUs(s.tavg)}</td><td>${fmtUs(s.tmax)}</td>`;
-    tbody.appendChild(tr);
-  });
-  document.querySelectorAll('#exec-stats-table th').forEach(th=>{
-    th.classList.remove('sort-asc','sort-desc');
-    if(th.dataset.col===_statsSortCol)
-      th.classList.add(_statsSortAsc?'sort-asc':'sort-desc');
-  });
-}
-
-document.querySelectorAll('#exec-stats-table th').forEach(th=>{
-  th.addEventListener('click',()=>{
-    if(_statsSortCol===th.dataset.col)_statsSortAsc=!_statsSortAsc;
-    else{_statsSortCol=th.dataset.col;_statsSortAsc=true;}
-    renderExecStatsTable();
-  });
+  const h = timelineHitFromEvent(ev);
+  if(h && h.hit) zoomToTimelineHit(h.hit);
 });
 
-// ── Task Duration Histogram ────────────────────────────────────────────────
-const HIST_H    = 160;
-const HIST_BINS = 40;
-const HIST_COLOR = '#06b6d4';  // cyan
+tlBSvg.addEventListener('pointerdown',ev=>{
+  _tlPointerDown = {x:ev.clientX, y:ev.clientY};
+});
 
-const histCanvas = document.getElementById('hist-canvas');
-const histSvg    = document.getElementById('hist-svg');
-let histAxisX=null, histAxisY=null;
+tlBSvg.addEventListener('mouseleave',hideTip);
 
-function buildHistExecSelector() {
-  histAxisX=null; histAxisY=null;
-  d3.select(histSvg).selectAll('*').remove();
-  drawHistogram();
-}
-
-function drawHistogram() {
-  if(!D.beg) return;
-  const fw = D.filteredWorkers || D.workers;
-  if(!fw.length) return;
-
-  // Always reset axes when SVG may have been cleared
-  if(!d3.select(histSvg).select('g').node()) {
-    histAxisX=null; histAxisY=null;
-  }
-
-  // Clamp near-zero durations to MIN_DUR instead of skipping them.
-  // Sub-nanosecond durations are measurement artifacts; we still want to
-  // show how many tasks fall in this category via the first bin.
-  const MIN_DUR = 0.001;  // 1 ns in µs
-  const durs=[];
-  fw.forEach(w=>{
-    for(let s=0;s<w.length;s++){
-      const i=w.offset+s;
-      if(D.end[i]<=D.x0||D.beg[i]>=D.x1) continue;
-      const dur=D.end[i]-D.beg[i];
-      durs.push(Math.max(dur, MIN_DUR));
-    }
-  });
-  if(!durs.length) return;
-
-  let minD=Infinity, maxD=0, sumD=0;
-  for(let i=0;i<durs.length;i++){
-    if(durs[i]<minD)minD=durs[i];
-    if(durs[i]>maxD)maxD=durs[i];
-    sumD+=durs[i];
-  }
-  if(minD===Infinity||minD<=0) return;
-  // Track whether we clamped any durations (for axis label)
-  const hasClamped = minD<=MIN_DUR;
-  const meanD = sumD/durs.length;
-
-  // ── Adaptive scale detection ───────────────────────────────────────────
-  // Signal 1: range ratio > 50 (wide span)
-  const rangeRatio = maxD / minD;
-  // Signal 2: skewness proxy — compute median from a quick linear binning
-  // then compare mean vs median. mean >> median → right-skewed → log.
-  const PROBE_BINS = 200;
-  const probeBins = new Array(PROBE_BINS).fill(0);
-  const probeRange = maxD - minD || 1;
-  durs.forEach(d => {
-    probeBins[Math.min(PROBE_BINS-1, Math.floor((d-minD)/probeRange*PROBE_BINS))]++;
-  });
-  let cumulative=0, medianD=minD;
-  const half=durs.length/2;
-  for(let i=0;i<PROBE_BINS;i++){
-    cumulative+=probeBins[i];
-    if(cumulative>=half){ medianD=minD+(i/PROBE_BINS)*probeRange; break; }
-  }
-  const useLog = rangeRatio > 50 && meanD > 2 * medianD;
-
-  // ── Build bins ─────────────────────────────────────────────────────────
-  const logMin = Math.log10(minD), logMax = Math.log10(Math.max(maxD, minD*1.001));
-  const bins = new Array(HIST_BINS).fill(0);
-  durs.forEach(d => {
-    if(d<=0) return;
-    let bi = useLog
-      ? Math.floor((Math.log10(d)-logMin)/(logMax-logMin)*HIST_BINS)
-      : Math.floor((d-minD)/probeRange*HIST_BINS);
-    bins[Math.min(Math.max(bi,0), HIST_BINS-1)]++;
-  });
-  let maxCount=0;
-  for(let i=0;i<bins.length;i++) if(bins[i]>maxCount) maxCount=bins[i];
-  if(!maxCount) return;
-
-  // ── Canvas setup ───────────────────────────────────────────────────────
-  const histSect = document.getElementById('hist-section');
-  const totalW = histSect.clientWidth || tlSection.clientWidth || window.innerWidth-32;
-  const cW2 = totalW - LABEL_W;
-  histSect.style.height = (HIST_H+XAXIS_H+4)+'px';
-  histCanvas.style.left = LABEL_W+'px';
-  setupCanvas(histCanvas, cW2, HIST_H);
-
-  const ctx = histCanvas.getContext('2d');
-  ctx.clearRect(0, 0, cW2, HIST_H);
-
-  const PAD_T=8, PAD_B=4;
-  const toY = v => HIST_H - PAD_B - (v/maxCount)*(HIST_H-PAD_T-PAD_B);
-  const toX = bi => (bi/HIST_BINS)*cW2;
-
-  // Filled area under step-line
-  ctx.beginPath();
-  ctx.moveTo(0, HIST_H-PAD_B);
-  for(let i=0;i<HIST_BINS;i++){
-    const x0=toX(i), x1=toX(i+1), y=toY(bins[i]);
-    ctx.lineTo(x0, y); ctx.lineTo(x1, y);
-  }
-  ctx.lineTo(cW2, HIST_H-PAD_B);
-  ctx.closePath();
-  ctx.fillStyle=HIST_COLOR; ctx.globalAlpha=0.2; ctx.fill();
-
-  // Step-line stroke
-  ctx.beginPath();
-  ctx.moveTo(0, toY(bins[0]));
-  for(let i=0;i<HIST_BINS;i++){
-    const x0=toX(i), x1=toX(i+1), y=toY(bins[i]);
-    ctx.lineTo(x0, y); ctx.lineTo(x1, y);
-  }
-  ctx.globalAlpha=1; ctx.strokeStyle=HIST_COLOR; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.globalAlpha=1;
-
-  // ── Axes ──────────────────────────────────────────────────────────────
-  const binToDur = bi => useLog
-    ? Math.pow(10, logMin + (bi/HIST_BINS)*(logMax-logMin))
-    : minD + (bi/HIST_BINS)*probeRange;
-
-  const svg = d3.select(histSvg);
-  svg.attr('width', totalW).attr('height', HIST_H+XAXIS_H+4);
-  if(!histAxisX) histAxisX=svg.append('g').attr('class','axis');
-  if(!histAxisY) histAxisY=svg.append('g').attr('class','axis');
-
-  const xScDur = d3.scaleLinear().domain([0,HIST_BINS]).range([LABEL_W, LABEL_W+cW2]);
-  const tickBins = [0, 10, 20, 30, 39];
-  histAxisX.attr('transform',`translate(0,${HIST_H})`)
-    .call(d3.axisBottom(xScDur).tickValues(tickBins).tickFormat(d=>{
-      if(d===0 && hasClamped) return '<1ns';
-      return fmtUs(binToDur(d));
-    }));
-  histAxisX.selectAll('text').style('text-anchor','middle');
-  histAxisX.select('text:first-of-type').style('text-anchor','start');
-
-  const ySc = d3.scaleLinear().domain([0,maxCount]).range([HIST_H-PAD_B, PAD_T]);
-  histAxisY.attr('transform',`translate(${LABEL_W},0)`)
-    .call(d3.axisLeft(ySc).ticks(4)
-      .tickFormat(d=>d>=1000?`${(d/1000).toFixed(0)}k`:String(d)));
-
-  // "Count" label — same style as "Task" / "Worker" in parallelism panels
-  if(!svg.select('.hist-count-label').node()){
-    svg.append('text').attr('class','hist-count-label')
-      .attr('x',8).attr('y',16).attr('fill','#8b949e').attr('font-size',15)
-      .text('Count');
-  }
-}
-
-// ── Executor filter ────────────────────────────────────────────────────────
-// D.filteredWorkers = subset of D.workers after applying executor filter.
+// ── Worker/level filter ────────────────────────────────────────────────────
+// D.filteredWorkers = subset of D.workers after applying row filter.
 // All render loops use D.filteredWorkers instead of D.workers.
 
 const execFilterBtn    = document.getElementById('exec-filter-btn');
@@ -1426,31 +944,25 @@ const execSearch       = document.getElementById('exec-search');
 const execPopList      = document.getElementById('exec-pop-list');
 const execPopCount     = document.getElementById('exec-pop-count');
 
-let _execIds      = [];      // all executor IDs in order
-let _execSelected = new Set(); // currently selected executor IDs
-let _execWorkerCounts = {};  // executorId -> worker count
+let _rowIds       = [];        // row indices into D.workers
+let _rowSelected  = new Set(); // selected row indices
+let _rowStats     = new Map(); // row index -> stats for current time window
 
 function initExecFilter() {
-  // Build executor list from D.workers
-  const seen = new Map();
-  D.workers.forEach(w => {
-    if (!seen.has(w.executorId)) seen.set(w.executorId, 0);
-    seen.set(w.executorId, seen.get(w.executorId) + 1);
-  });
-  _execIds = [...seen.keys()].sort((a,b) => a-b);
-  _execWorkerCounts = Object.fromEntries(seen);
-  _execSelected = new Set(_execIds);  // all selected by default
+  _rowIds = D.workers.map((_, i) => i);
+  _rowSelected = new Set(_rowIds);
 
-  execFilterCount.textContent = _execIds.length;
-  execFilterBtn.textContent = `All ${_execIds.length} ▾`;
+  execFilterCount.textContent = _rowIds.length;
+  execFilterBtn.textContent = `All ${_rowIds.length} ▾`;
   execFilterClear.style.display = 'none';
   execFilterBtn.classList.remove('active');
 
+  computeRowStats();
   buildExecList('');
   applyExecFilter();
 }
 
-let _popSortCol = null, _popSortAsc = false;
+let _popSortCol = 'key', _popSortAsc = true;
 
 // Wire up sortable header clicks once
 document.getElementById('exec-pop-headers').querySelectorAll('[data-sort]').forEach(th => {
@@ -1458,26 +970,44 @@ document.getElementById('exec-pop-headers').querySelectorAll('[data-sort]').forE
     e.stopPropagation();
     const col = th.dataset.sort;
     if (_popSortCol === col) _popSortAsc = !_popSortAsc;
-    else { _popSortCol = col; _popSortAsc = col === 'id'; }  // id: asc by default, stats: desc
+    else { _popSortCol = col; _popSortAsc = col === 'key'; }
     buildExecList(document.getElementById('exec-search').value);
   });
 });
 
+function computeRowStats() {
+  _rowStats = new Map();
+  if(!D.workers) return;
+  D.workers.forEach((w, rowId) => {
+    let tasks = 0, active = 0, longest = 0;
+    for(let s=0; s<w.length; s++){
+      const i = w.offset+s;
+      const b = Math.max(D.beg[i], D.x0);
+      const e = Math.min(D.end[i], D.x1);
+      if(b >= e) continue;
+      const dur = e - b;
+      tasks++;
+      active += dur;
+      if(dur > longest) longest = dur;
+    }
+    _rowStats.set(rowId, {key:w.key, tasks, active, longest});
+  });
+}
+
 function buildExecList(query) {
   execPopList.innerHTML = '';
   const q = query.toLowerCase();
-  let filtered = _execIds.filter(id => ('e'+id).includes(q) || String(id).includes(q));
-
-  // Build stats lookup
-  const statsMap = new Map();
-  _execStats.forEach(s => statsMap.set(s.id, s));
+  let filtered = _rowIds.filter(id => D.workers[id].key.toLowerCase().includes(q));
 
   // Sort if a column is selected
   if (_popSortCol) {
     filtered = [...filtered].sort((a, b) => {
-      const sa = statsMap.get(a), sb = statsMap.get(b);
-      const av = sa ? sa[_popSortCol] : 0;
-      const bv = sb ? sb[_popSortCol] : 0;
+      const sa = _rowStats.get(a), sb = _rowStats.get(b);
+      const av = _popSortCol === 'key' ? D.workers[a].key : (sa ? sa[_popSortCol] : 0);
+      const bv = _popSortCol === 'key' ? D.workers[b].key : (sb ? sb[_popSortCol] : 0);
+      if(typeof av === 'string') {
+        return _popSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
       return _popSortAsc ? av - bv : bv - av;
     });
   }
@@ -1489,25 +1019,25 @@ function buildExecList(query) {
       th.classList.add(_popSortAsc ? 'ph-sort-asc' : 'ph-sort-desc');
   });
 
-  filtered.forEach(id => {
+  filtered.forEach(rowId => {
     const item = document.createElement('label');
     item.className = 'exec-item';
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
-    cb.checked = _execSelected.has(id);
+    cb.checked = _rowSelected.has(rowId);
     cb.addEventListener('change', () => {
-      if (cb.checked) _execSelected.add(id);
-      else _execSelected.delete(id);
+      if (cb.checked) _rowSelected.add(rowId);
+      else _rowSelected.delete(rowId);
       updateExecFilterBtn();
       applyExecFilter();
     });
 
     const name = document.createElement('span');
     name.className = 'ei-name';
-    name.textContent = `E${id}`;
+    name.textContent = D.workers[rowId].key;
 
-    const s = statsMap.get(id);
+    const s = _rowStats.get(rowId);
     const mkStat = (txt, extraClass='') => {
       const el = document.createElement('span');
       el.className = 'ei-stat' + (extraClass ? ' '+extraClass : '');
@@ -1515,28 +1045,19 @@ function buildExecList(query) {
       return el;
     };
 
-    let tasks='—', util='—', peak='—', uClass='';
-    if (s) {
-      tasks = s.tasks.toLocaleString();
-      const u = (s.util*100).toFixed(0);
-      util  = u+'%';
-      uClass = s.util>=0.8?'ei-util-hi':s.util>=0.5?'ei-util-mi':'ei-util-lo';
-      peak  = String(s.peak);
-    }
-
     item.appendChild(cb);
     item.appendChild(name);
-    item.appendChild(mkStat(tasks));
-    item.appendChild(mkStat(util, uClass));
-    item.appendChild(mkStat(peak));
+    item.appendChild(mkStat(s ? s.tasks.toLocaleString() : '0'));
+    item.appendChild(mkStat(s ? fmtUs(s.active) : '0'));
+    item.appendChild(mkStat(s ? fmtUs(s.longest) : '0'));
     execPopList.appendChild(item);
   });
-  execPopCount.textContent = `${filtered.length} of ${_execIds.length} executors`;
+  execPopCount.textContent = `${filtered.length} of ${_rowIds.length} rows`;
 }
 
 function updateExecFilterBtn() {
-  const total = _execIds.length;
-  const sel   = _execSelected.size;
+  const total = _rowIds.length;
+  const sel   = _rowSelected.size;
   if (sel === total) {
     execFilterBtn.textContent = `All ${total} ▾`;
     execFilterBtn.classList.remove('active');
@@ -1546,8 +1067,8 @@ function updateExecFilterBtn() {
     execFilterBtn.classList.add('active');
     execFilterClear.style.display = '';
   } else {
-    const preview = [..._execSelected].slice(0,3).map(id=>`E${id}`).join(', ');
-    const extra = sel > 3 ? ` +${sel-3}` : '';
+    const preview = [..._rowSelected].slice(0,2).map(id=>D.workers[id].key).join(', ');
+    const extra = sel > 2 ? ` +${sel-2}` : '';
     execFilterBtn.textContent = `${preview}${extra} ▾`;
     execFilterBtn.classList.add('active');
     execFilterClear.style.display = '';
@@ -1555,10 +1076,10 @@ function updateExecFilterBtn() {
 }
 
 function applyExecFilter() {
-  const allSelected = _execSelected.size === _execIds.length;
+  const allSelected = _rowSelected.size === _rowIds.length;
   D.filteredWorkers = allSelected
     ? D.workers
-    : D.workers.filter(w => _execSelected.has(w.executorId));
+    : D.workers.filter((_, rowId) => _rowSelected.has(rowId));
   // Recompute geometry for filtered worker count
   const n = D.filteredWorkers.length;
   const dpr = window.devicePixelRatio || 1;
@@ -1566,10 +1087,8 @@ function applyExecFilter() {
   D.sectionH   = D.totalRowsH + XAXIS_H;
   D.canvasH    = Math.min(D.totalRowsH, Math.floor(BROWSER_MAX_H / dpr));
   D.scrollTop  = 0;
-  // Rebuild rank and restart sweep with filtered workers
   buildRank();
-  spawnSweep();
-  render();  // render() will defer computeExecStats/drawHistogram
+  render();
 }
 
 // Popover open/close
@@ -1577,9 +1096,6 @@ execFilterBtn.addEventListener('click', e => {
   e.stopPropagation();
   execPopover.classList.toggle('open');
   if (execPopover.classList.contains('open')) {
-    // Position below button
-    const br = execFilterBtn.getBoundingClientRect();
-    const barTop = document.getElementById('exec-filter-bar').getBoundingClientRect().top;
     execPopover.style.top = (execFilterBtn.offsetTop + execFilterBtn.offsetHeight + 2) + 'px';
     execSearch.value = '';
     buildExecList('');
@@ -1593,19 +1109,19 @@ document.addEventListener('click', e => {
 });
 execSearch.addEventListener('input', () => buildExecList(execSearch.value));
 document.getElementById('exec-sel-all').addEventListener('click', () => {
-  _execSelected = new Set(_execIds);
+  _rowSelected = new Set(_rowIds);
   buildExecList(execSearch.value);
   updateExecFilterBtn();
   applyExecFilter();
 });
 document.getElementById('exec-sel-none').addEventListener('click', () => {
-  _execSelected = new Set();
+  _rowSelected = new Set();
   buildExecList(execSearch.value);
   updateExecFilterBtn();
   applyExecFilter();
 });
 execFilterClear.addEventListener('click', () => {
-  _execSelected = new Set(_execIds);
+  _rowSelected = new Set(_rowIds);
   updateExecFilterBtn();
   applyExecFilter();
 });
@@ -1624,7 +1140,7 @@ const themeBtn = document.getElementById('theme-btn');
 function applyTheme(light) {
   document.documentElement.classList.toggle('light', light);
   themeBtn.textContent = light ? '🌙' : '☀️';
-  // Redraw canvases since row/mini background colors changed
+  // Redraw visual layers since row/mini background colors changed
   if(D.beg){ drawTimeline(); drawMini(); }
 }
 // Restore saved preference
@@ -1733,95 +1249,5 @@ self.onmessage=e=>{
 };
 </script>
 
-<!-- Sweep Worker (source also in js/sweep.worker.js) -->
-<script id="src-sweep" type="text/plain">
-'use strict';
-let B=null,E=null,W=null,physicalWorkers=null;
-// Pre-computed full-resolution curves (over entire [minUs,maxUs] range)
-let fullWC=null, fullTC=null, fullBins=0, fullMin=0, fullMax=0;
-
-const FULL_BINS = 4000;  // high resolution pre-computed curve
-
-function buildFullCurves(minUs, maxUs) {
-  const bins=FULL_BINS, range=maxUs-minUs;
-  if(range<=0){fullWC=new Float32Array(bins);fullTC=new Float32Array(bins);return;}
-  const bu=range/bins;
-  const wc=new Float32Array(bins), td=new Float32Array(bins+1);
-
-  for(let pi=0;pi<physicalWorkers.length;pi++){
-    const wa=new Uint8Array(bins);
-    const wlist=physicalWorkers[pi];
-    for(let wi=0;wi<wlist.length;wi++){
-      const{offset:off,length:len}=W[wlist[wi]];
-      for(let s=0;s<len;s++){
-        const i=off+s,b=B[i],e=E[i];
-        if(e<=minUs||b>=maxUs)continue;
-        const fb=Math.floor((Math.max(b,minUs)-minUs)/bu);
-        const lb=Math.min(bins-1,Math.floor((Math.min(e,maxUs)-minUs-1e-9)/bu));
-        if(fb>lb)continue;
-        for(let bn=fb;bn<=lb;bn++)wa[bn]=1;
-        td[fb]+=1;td[lb+1]-=1;
-      }
-    }
-    for(let bn=0;bn<bins;bn++)if(wa[bn])wc[bn]+=1;
-  }
-  const tc=new Float32Array(bins);let r=0;
-  for(let bn=0;bn<bins;bn++){r+=td[bn];tc[bn]=r;}
-  fullWC=wc; fullTC=tc; fullBins=bins; fullMin=minUs; fullMax=maxUs;
-}
-
-// Slice the pre-computed full curves to the query window [x0,x1]
-// and downsample to px output bins — O(FULL_BINS) not O(segments)
-function sliceCurves(x0, x1, px) {
-  const outBins=Math.max(1,Math.floor(px));
-  const wc=new Float32Array(outBins), tc=new Float32Array(outBins);
-  if(!fullWC||fullMax<=fullMin)return{wc,tc};
-
-  const range=fullMax-fullMin;
-  const bu=range/fullBins;  // microseconds per full bin
-
-  // Map x0,x1 to full bin indices
-  const fb0=Math.max(0,Math.floor((x0-fullMin)/bu));
-  const fb1=Math.min(fullBins-1,Math.floor((x1-fullMin)/bu));
-  const nFull=fb1-fb0+1;
-  if(nFull<=0)return{wc,tc};
-
-  // Average/max full bins into output bins
-  const ratio=nFull/outBins;
-  for(let ob=0;ob<outBins;ob++){
-    const bStart=fb0+Math.floor(ob*ratio);
-    const bEnd=fb0+Math.min(nFull-1,Math.floor((ob+1)*ratio));
-    let maxWC=0, maxTC=0;
-    for(let b=bStart;b<=bEnd;b++){
-      if(fullWC[b]>maxWC)maxWC=fullWC[b];
-      if(fullTC[b]>maxTC)maxTC=fullTC[b];
-    }
-    wc[ob]=maxWC; tc[ob]=maxTC;
-  }
-  return{wc,tc};
-}
-
-self.onmessage=e=>{
-  const m=e.data;
-  if(m.type==='init'){
-    B=m.beg;E=m.end;W=m.workers;
-    const map=new Map();
-    for(let wi=0;wi<W.length;wi++){
-      const key=W[wi].executorId+'_'+W[wi].workerIdx;
-      if(!map.has(key))map.set(key,[]);
-      map.get(key).push(wi);
-    }
-    physicalWorkers=[...map.values()];
-    // Pre-compute full curves in background
-    buildFullCurves(m.minUs, m.maxUs);
-    self.postMessage({type:'ready'});
-    return;
-  }
-  if(m.type==='query'){
-    const{wc,tc}=sliceCurves(m.x0,m.x1,m.px);
-    self.postMessage({type:'result',wc,tc},[wc.buffer,tc.buffer]);
-  }
-};
-</script>
 </body>
 </html>
